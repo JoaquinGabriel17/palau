@@ -1,0 +1,6 @@
+.xlsm
+.xlsx
+~$*
+libro/
+data/real/
+__pycache__/
