@@ -5,20 +5,24 @@ Public Function CalcularTO(ByVal TPL As Double, ByVal PNP As Double) As Double
     CalcularTO = TPL - PNP
 End Function
 
-Public Function CalcularDisponibilidad(ByVal TO As Double, ByVal TPL As Double) As Variant
+Public Function CalcularDisponibilidad(ByVal TiempoOperativo As Double, ByVal TPL As Double) As Variant
     If TPL = 0 Then
         CalcularDisponibilidad = Empty
     Else
-        CalcularDisponibilidad = TO / TPL
+        CalcularDisponibilidad = TiempoOperativo / TPL
     End If
 End Function
 
-Public Function CalcularRendimiento(ByVal UnidadesTotales As Double, ByVal VelocidadNominal As Double, ByVal TO As Double) As Variant
-    If VelocidadNominal = 0 Or TO = 0 Then
-        CalcularRendimiento = Empty
+Public Function CalcularRendimientoOEE(ByVal UnidadesTotales As Double, ByVal VelocidadNominal As Double, ByVal TiempoOperativo As Double) As Variant
+    If VelocidadNominal = 0 Or TiempoOperativo = 0 Then
+        CalcularRendimientoOEE = Empty
     Else
-        CalcularRendimiento = (UnidadesTotales / VelocidadNominal) / TO
+        CalcularRendimientoOEE = (UnidadesTotales / VelocidadNominal) / TiempoOperativo
     End If
+End Function
+
+Public Function CalcularRendimiento(ByVal UnidadesTotales As Double, ByVal VelocidadNominal As Double, ByVal TiempoOperativo As Double) As Variant
+    CalcularRendimiento = CalcularRendimientoOEE(UnidadesTotales, VelocidadNominal, TiempoOperativo)
 End Function
 
 Public Function CalcularCalidad(ByVal UnidadesBuenas As Double, ByVal UnidadesTotales As Double) As Variant

@@ -3,7 +3,38 @@ Option Explicit
 
 Private Const UMBRAL_MICRO_DEFECTO As Double = 5
 
+Private Type TResumenTurno
+    TD As Double
+    PP As Double
+    PE As Double
+    PNP As Double
+    UnidadesBuenas As Double
+    UnidadesRechazadas As Double
+    TiempoIdeal As Double
+    Encontrado As Boolean
+End Type
+
+Private Function NumeroSeguro(ByVal v As Variant) As Double
+    If IsEmpty(v) Or IsNull(v) Then Exit Function
+    If IsNumeric(v) Then NumeroSeguro = CDbl(v)
+End Function
+
 Public Function CalcularOEE_Turno(ByVal id_turno As String) As Double
+    Dim resumen As TResumenTurno
+
+    If ResumenTurno(id_turno, resumen) Then
+        CalcularOEE_Turno = CalcularOEE_DesdeTotales( _
+            resumen.TD, _
+            resumen.PP, _
+            resumen.PE, _
+            resumen.PNP, _
+            resumen.UnidadesBuenas, _
+            resumen.UnidadesRechazadas, _
+            resumen.TiempoIdeal)
+    End If
+End Function
+
+Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResumenTurno) As Boolean
     Dim loTurnos As ListObject
     Dim loParadas As ListObject
     Dim loProduccion As ListObject
@@ -56,11 +87,11 @@ Public Function CalcularOEE_Turno(ByVal id_turno As String) As Double
     Dim prod As Double
     Dim rech As Double
     Dim buenas As Double
-    Dim total As Double
     Dim tiempoIdeal As Double
     Dim vel As Double
     Dim incluir As Boolean
 
+    resumen.Encontrado = False
     Set loTurnos = Tabla("tblTurnosRegistro")
     Set loParadas = Tabla("tblParadas")
     Set loProduccion = Tabla("tblProduccion")
@@ -139,7 +170,7 @@ Public Function CalcularOEE_Turno(ByVal id_turno As String) As Double
                 End If
                 If incluir Then
                     dur = 0
-                    If cDurParada > 0 Then dur = ANumero(rng.Cells(i, cDurParada).Value)
+                    If cDurParada > 0 Then dur = NumeroSeguro(rng.Cells(i, cDurParada).Value)
                     If dur <= 0 And cIniParada > 0 And cFinParada > 0 Then
                         dur = DuracionMin(0, rng.Cells(i, cIniParada).Value, rng.Cells(i, cFinParada).Value)
                     End If
@@ -176,7 +207,7 @@ Public Function CalcularOEE_Turno(ByVal id_turno As String) As Double
                 incluir = Pertenece(segs, seg)
                 If Not incluir And Len(seg) = 0 Then incluir = Pertenece(lotes, lote)
                 If incluir And cCantidad > 0 Then
-                    dur = ANumero(rng.Cells(i, cCantidad).Value)
+                    dur = NumeroSeguro(rng.Cells(i, cCantidad).Value)
                     rech = rech + dur
                     If Len(seg) > 0 Then
                         If rechSeg.Exists(seg) Then
@@ -210,10 +241,10 @@ Public Function CalcularOEE_Turno(ByVal id_turno As String) As Double
                 incluir = Pertenece(segs, seg)
                 If Not incluir And Len(seg) = 0 Then incluir = Pertenece(lotes, lote)
                 If incluir And cUnidades > 0 Then
-                    dur = ANumero(rng.Cells(i, cUnidades).Value)
+                    dur = NumeroSeguro(rng.Cells(i, cUnidades).Value)
                     prod = prod + dur
                     vel = 0
-                    If cVelocidad > 0 Then vel = ANumero(rng.Cells(i, cVelocidad).Value)
+                    If cVelocidad > 0 Then vel = NumeroSeguro(rng.Cells(i, cVelocidad).Value)
                     If vel <= 0 And cProducto > 0 Then
                         producto = CStr(rng.Cells(i, cProducto).Value)
                         If cFechaProduccion > 0 Then
@@ -240,9 +271,16 @@ Public Function CalcularOEE_Turno(ByVal id_turno As String) As Double
     Next k
 
     buenas = prod
-    total = buenas + rech
 
-    CalcularOEE_Turno = CalcularOEE_DesdeTotales(td, pp, pe, pnp, buenas, rech, tiempoIdeal)
+    resumen.TD = td
+    resumen.PP = pp
+    resumen.PE = pe
+    resumen.PNP = pnp
+    resumen.UnidadesBuenas = buenas
+    resumen.UnidadesRechazadas = rech
+    resumen.TiempoIdeal = tiempoIdeal
+    resumen.Encontrado = True
+    ResumenTurno = True
 End Function
 
 Public Function CalcularOEE_DesdeTotales(ByVal TD As Double, ByVal PP As Double, ByVal PE As Double, ByVal PNP As Double, ByVal UnidadesBuenas As Double, ByVal UnidadesRechazadas As Double, ByVal TiempoIdealMin As Double) As Double
@@ -260,9 +298,73 @@ Public Function CalcularOEE_DesdeTotales(ByVal TD As Double, ByVal PP As Double,
     If TiempoIdealMin > 0 Then velEfectiva = total / TiempoIdealMin
 
     CalcularOEE_DesdeTotales = CalcularOEE( _
-        ANumero(CalcularDisponibilidad(tOper, tpl)), _
-        ANumero(CalcularRendimiento(total, velEfectiva, tOper)), _
-        ANumero(CalcularCalidad(UnidadesBuenas, total)))
+        NumeroSeguro(CalcularDisponibilidad(tOper, tpl)), _
+        NumeroSeguro(CalcularRendimientoOEE(total, velEfectiva, tOper)), _
+        NumeroSeguro(CalcularCalidad(UnidadesBuenas, total)))
+End Function
+
+Public Function CalcularOEE_Dia(ByVal fecha As Date) As Double
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim ids As Collection
+    Dim resumen As TResumenTurno
+    Dim cIdTurno As Long
+    Dim cFecha As Long
+    Dim i As Long
+    Dim k As Variant
+    Dim dia As Date
+    Dim td As Double
+    Dim pp As Double
+    Dim pe As Double
+    Dim pnp As Double
+    Dim buenas As Double
+    Dim rech As Double
+    Dim tiempoIdeal As Double
+    Dim n As Long
+    Dim f As Date
+
+    Set lo = Tabla("tblTurnosRegistro")
+    If lo Is Nothing Then Exit Function
+
+    cIdTurno = IndiceColumna(lo, "id_turno")
+    cFecha = IndiceColumna(lo, "fecha")
+    If cIdTurno = 0 Or cFecha = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    Set ids = New Collection
+    dia = DateSerial(Year(fecha), Month(fecha), Day(fecha))
+
+    For i = 1 To rng.Rows.Count
+        f = AFecha(rng.Cells(i, cFecha).Value)
+        If f > 0 Then
+            If DateSerial(Year(f), Month(f), Day(f)) = dia Then
+                AgregarUnico ids, CStr(rng.Cells(i, cIdTurno).Value)
+            End If
+        End If
+    Next i
+
+    If ids.Count = 0 Then Exit Function
+
+    For Each k In ids
+        If ResumenTurno(CStr(k), resumen) Then
+            If resumen.UnidadesBuenas + resumen.UnidadesRechazadas > 0 Or resumen.PP + resumen.PE + resumen.PNP > 0 Then
+                td = td + resumen.TD
+                pp = pp + resumen.PP
+                pe = pe + resumen.PE
+                pnp = pnp + resumen.PNP
+                buenas = buenas + resumen.UnidadesBuenas
+                rech = rech + resumen.UnidadesRechazadas
+                tiempoIdeal = tiempoIdeal + resumen.TiempoIdeal
+                n = n + 1
+            End If
+        End If
+    Next k
+
+    If n = 0 Then Exit Function
+
+    CalcularOEE_Dia = CalcularOEE_DesdeTotales(td, pp, pe, pnp, buenas, rech, tiempoIdeal)
 End Function
 
 Public Function ExisteTurno(ByVal id_turno As String) As Boolean
@@ -287,7 +389,11 @@ Public Function ExisteTurno(ByVal id_turno As String) As Boolean
     Next i
 End Function
 
-Private Function Tabla(ByVal nombre As String) As ListObject
+Public Function VelocidadVigente(ByVal producto As String, ByVal fecha As Date) As Double
+    VelocidadVigente = BuscarVelocidad(Tabla("tblVelocidades"), producto, fecha)
+End Function
+
+Public Function Tabla(ByVal nombre As String) As ListObject
     Dim ws As Worksheet
     Dim lo As ListObject
 
@@ -334,11 +440,6 @@ Private Function Pertenece(ByVal col As Collection, ByVal valor As String) As Bo
     Next v
 End Function
 
-Private Function ANumero(ByVal v As Variant) As Double
-    If IsEmpty(v) Or IsNull(v) Then Exit Function
-    If IsNumeric(v) Then ANumero = CDbl(v)
-End Function
-
 Private Function AFecha(ByVal v As Variant) As Date
     If IsDate(v) Then AFecha = CDate(v)
 End Function
@@ -348,7 +449,7 @@ Private Function DuracionMin(ByVal dur As Variant, ByVal ini As Variant, ByVal f
     Dim f1 As Date
     Dim f2 As Date
 
-    d = ANumero(dur)
+    d = NumeroSeguro(dur)
     If d > 0 Then
         DuracionMin = d
         Exit Function
@@ -388,7 +489,7 @@ Private Function UmbralMicro() As Double
     If Not rng Is Nothing Then
         For i = 1 To rng.Rows.Count
             If StrComp(CStr(rng.Cells(i, cParametro).Value), "UMBRAL_MICROPARADA_MIN", vbTextCompare) = 0 Then
-                v = ANumero(rng.Cells(i, cValor).Value)
+                v = NumeroSeguro(rng.Cells(i, cValor).Value)
                 If v > 0 Then
                     UmbralMicro = v
                     Exit Function
@@ -427,10 +528,10 @@ Private Function TDDesdeCatalogo(ByVal codigo As String) As Double
 
     For i = 1 To rng.Rows.Count
         If StrComp(CStr(rng.Cells(i, cCodigo).Value), codigo, vbTextCompare) = 0 Then
-            If cTD > 0 Then TDDesdeCatalogo = ANumero(rng.Cells(i, cTD).Value)
+            If cTD > 0 Then TDDesdeCatalogo = NumeroSeguro(rng.Cells(i, cTD).Value)
             If TDDesdeCatalogo <= 0 And cInicio > 0 And cFin > 0 Then
-                hi = ANumero(rng.Cells(i, cInicio).Value) * 1440
-                hf = ANumero(rng.Cells(i, cFin).Value) * 1440
+                hi = NumeroSeguro(rng.Cells(i, cInicio).Value) * 1440
+                hf = NumeroSeguro(rng.Cells(i, cFin).Value) * 1440
                 If hf <= hi Then hf = hf + 1440
                 TDDesdeCatalogo = hf - hi
             End If
@@ -468,7 +569,7 @@ Private Function BuscarVelocidad(ByVal lo As ListObject, ByVal producto As Strin
 
     For i = 1 To rng.Rows.Count
         If StrComp(CStr(rng.Cells(i, cProducto).Value), producto, vbTextCompare) = 0 Then
-            v = ANumero(rng.Cells(i, cVelocidad).Value)
+            v = NumeroSeguro(rng.Cells(i, cVelocidad).Value)
             If v > 0 Then
                 activo = ""
                 If cActivo > 0 Then activo = CStr(rng.Cells(i, cActivo).Value)
