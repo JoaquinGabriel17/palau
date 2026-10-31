@@ -1,7 +1,7 @@
 Attribute VB_Name = "Tests"
 Option Explicit
 
-Private Const TOLERANCIA As Double = 0.0005
+Private Const tolerancia As Double = 0.0005
 
 Public Sub EjecutarPruebas()
     Call RunAllTests
@@ -72,16 +72,16 @@ Public Function Test_Caso498_PuntaAPunta() As Boolean
 
     ok = detalle.Encontrado _
         And CercaMinutos(detalle.TO, 330, tolerancia) _
-        And CercaPP(CDbl(detalle.Disponibilidad), 0.8148, tolerancia) _
-        And CercaPP(CDbl(detalle.Rendimiento), 0.7534, tolerancia) _
-        And CercaPP(CDbl(detalle.Calidad), 0.9998, tolerancia) _
+        And CercaPP(CDbl(detalle.disponibilidad), 0.8148, tolerancia) _
+        And CercaPP(CDbl(detalle.rendimiento), 0.7534, tolerancia) _
+        And CercaPP(CDbl(detalle.calidad), 0.9998, tolerancia) _
         And CercaPP(oee, 0.6138, tolerancia)
 
     Debug.Print "Caso 498 punta a punta: " & IIf(ok, "OK", "ERROR") & _
         " (TO=" & Format$(detalle.TO, "0.00") & _
-        ", D=" & Format$(CDbl(detalle.Disponibilidad), "0.00%") & _
-        ", R=" & Format$(CDbl(detalle.Rendimiento), "0.00%") & _
-        ", C=" & Format$(CDbl(detalle.Calidad), "0.00%") & _
+        ", D=" & Format$(CDbl(detalle.disponibilidad), "0.00%") & _
+        ", R=" & Format$(CDbl(detalle.rendimiento), "0.00%") & _
+        ", C=" & Format$(CDbl(detalle.calidad), "0.00%") & _
         ", OEE=" & Format$(oee, "0.00%") & ")"
     Test_Caso498_PuntaAPunta = ok
 End Function
@@ -117,23 +117,23 @@ Public Sub ReporteCaso498()
     ws.Range(ws.Cells(5, 1), ws.Cells(5, 2)).Interior.Color = RGB(221, 235, 247)
 
     fila = 6
-    EscribirValor ws, fila, "TD (min)", detalle.TD, "0.00"
+    EscribirValor ws, fila, "TD (min)", detalle.td, "0.00"
     fila = fila + 1
-    EscribirValor ws, fila, "PP (min)", detalle.PP, "0.00"
+    EscribirValor ws, fila, "PP (min)", detalle.pp, "0.00"
     fila = fila + 1
-    EscribirValor ws, fila, "PE (min)", detalle.PE, "0.00"
+    EscribirValor ws, fila, "PE (min)", detalle.pe, "0.00"
     fila = fila + 1
-    EscribirValor ws, fila, "A/F (min)", detalle.AF, "0.00"
+    EscribirValor ws, fila, "A/F (min)", detalle.af, "0.00"
     fila = fila + 1
-    EscribirValor ws, fila, "A y C (min)", detalle.AC, "0.00"
+    EscribirValor ws, fila, "A y C (min)", detalle.ac, "0.00"
     fila = fila + 1
-    EscribirValor ws, fila, "Microparadas (min)", detalle.Micro, "0.00"
+    EscribirValor ws, fila, "Microparadas (min)", detalle.micro, "0.00"
     fila = fila + 1
-    EscribirValor ws, fila, "TPL (min)", detalle.TPL, "0.00"
+    EscribirValor ws, fila, "TPL (min)", detalle.tpl, "0.00"
     fila = fila + 1
     EscribirValor ws, fila, "TO (min)", detalle.TO, "0.00"
     fila = fila + 1
-    EscribirValor ws, fila, "Tiempo ideal (min)", detalle.TiempoIdeal, "0.00"
+    EscribirValor ws, fila, "Tiempo ideal (min)", detalle.tiempoIdeal, "0.00"
     fila = fila + 1
     EscribirValor ws, fila, "Unidades buenas", detalle.UnidadesBuenas, "#,##0"
     fila = fila + 1
@@ -159,15 +159,15 @@ Public Sub ReporteCaso498()
     fila = fila + 1
     EscribirComparacionDoble ws, fila, "TO (min)", detalle.TO, 375, 330, tolerancia, False, "0.00"
     fila = fila + 1
-    EscribirComparacionDoble ws, fila, "Disponibilidad", CDbl(detalle.Disponibilidad), 0.926, 0.815, tolerancia, True, "0.00%"
+    EscribirComparacionDoble ws, fila, "Disponibilidad", CDbl(detalle.disponibilidad), 0.926, 0.815, tolerancia, True, "0.00%"
     fila = fila + 1
     EscribirComparacionDoble ws, fila, "UT (unidades)", detalle.UnidadesTotales, 17404, 17404, tolerancia, False, "#,##0"
     fila = fila + 1
-    EscribirComparacionDoble ws, fila, "Rendimiento", CDbl(detalle.Rendimiento), 0.663, 0.753, tolerancia, True, "0.00%"
+    EscribirComparacionDoble ws, fila, "Rendimiento", CDbl(detalle.rendimiento), 0.663, 0.753, tolerancia, True, "0.00%"
     fila = fila + 1
-    EscribirComparacionDoble ws, fila, "Calidad", CDbl(detalle.Calidad), 0.9998, 0.9998, tolerancia, True, "0.00%"
+    EscribirComparacionDoble ws, fila, "Calidad", CDbl(detalle.calidad), 0.9998, 0.9998, tolerancia, True, "0.00%"
     fila = fila + 1
-    EscribirComparacionDoble ws, fila, "OEE", detalle.OEE, 0.614, 0.614, tolerancia, True, "0.00%"
+    EscribirComparacionDoble ws, fila, "OEE", detalle.oee, 0.614, 0.614, tolerancia, True, "0.00%"
 
     fila = fila + 2
     ws.Cells(fila, 1).Value = "Diferencias: pp para D, R, C y OEE; min para TO; unidades para UT. PASA/FALLA con tolerancia P-08 (Doc 1.4)."
@@ -181,11 +181,11 @@ Public Sub ReporteCaso498()
     ws.Columns("A:H").AutoFit
 
     Debug.Print "ReporteCaso498: TO=" & Format$(detalle.TO, "0.00") & _
-        ", Disponibilidad=" & Format$(CDbl(detalle.Disponibilidad), "0.00%") & _
+        ", Disponibilidad=" & Format$(CDbl(detalle.disponibilidad), "0.00%") & _
         ", UT=" & Format$(detalle.UnidadesTotales, "#,##0") & _
-        ", Rendimiento=" & Format$(CDbl(detalle.Rendimiento), "0.00%") & _
-        ", Calidad=" & Format$(CDbl(detalle.Calidad), "0.00%") & _
-        ", OEE=" & Format$(detalle.OEE, "0.00%")
+        ", Rendimiento=" & Format$(CDbl(detalle.rendimiento), "0.00%") & _
+        ", Calidad=" & Format$(CDbl(detalle.calidad), "0.00%") & _
+        ", OEE=" & Format$(detalle.oee, "0.00%")
 End Sub
 
 Private Sub EscribirValor(ByVal ws As Worksheet, ByVal fila As Long, ByVal nombre As String, ByVal valor As Double, ByVal formato As String)
@@ -368,7 +368,7 @@ Fallo:
 End Function
 
 Private Function Comparar(ByVal nombre As String, ByVal obtenido As Double, ByVal esperado As Double) As Boolean
-    If Abs(obtenido - esperado) <= TOLERANCIA Then
+    If Abs(obtenido - esperado) <= tolerancia Then
         Debug.Print nombre & ": OK (" & Format$(obtenido, "0.0000") & ")"
         Comparar = True
     Else
@@ -377,7 +377,7 @@ Private Function Comparar(ByVal nombre As String, ByVal obtenido As Double, ByVa
 End Function
 
 Private Function Cerca(ByVal a As Double, ByVal b As Double) As Boolean
-    Cerca = (Abs(a - b) <= TOLERANCIA)
+    Cerca = (Abs(a - b) <= tolerancia)
 End Function
 
 Private Function CercaPP(ByVal calculado As Double, ByVal esperado As Double, ByVal tolerancia As Double) As Boolean

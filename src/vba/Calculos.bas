@@ -1,15 +1,15 @@
 Attribute VB_Name = "Calculos"
 Option Explicit
 
-Public Function CalcularTO(ByVal TPL As Double, ByVal PNP As Double) As Double
-    CalcularTO = TPL - PNP
+Public Function CalcularTO(ByVal tpl As Double, ByVal pnp As Double) As Double
+    CalcularTO = tpl - pnp
 End Function
 
-Public Function CalcularDisponibilidad(ByVal TiempoOperativo As Double, ByVal TPL As Double) As Variant
-    If TPL = 0 Then
+Public Function CalcularDisponibilidad(ByVal TiempoOperativo As Double, ByVal tpl As Double) As Variant
+    If tpl = 0 Then
         CalcularDisponibilidad = Empty
     Else
-        CalcularDisponibilidad = TiempoOperativo / TPL
+        CalcularDisponibilidad = TiempoOperativo / tpl
     End If
 End Function
 
@@ -33,6 +33,6 @@ Public Function CalcularCalidad(ByVal UnidadesBuenas As Double, ByVal UnidadesTo
     End If
 End Function
 
-Public Function CalcularOEE(ByVal Disponibilidad As Double, ByVal Rendimiento As Double, ByVal Calidad As Double) As Double
-    CalcularOEE = Disponibilidad * Rendimiento * Calidad
+Public Function CalcularOEE(ByVal disponibilidad As Double, ByVal rendimiento As Double, ByVal calidad As Double) As Double
+    CalcularOEE = disponibilidad * rendimiento * calidad
 End Function
