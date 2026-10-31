@@ -4,6 +4,10 @@ Option Explicit
 Private Const TOLERANCIA As Double = 0.0005
 
 Public Sub EjecutarPruebas()
+    Call RunAllTests
+End Sub
+
+Public Function RunAllTests() As Boolean
     Dim aciertos As Long
     Dim total As Long
     Dim oee As Double
@@ -12,6 +16,9 @@ Public Sub EjecutarPruebas()
 
     total = total + 1
     If Comparar("Caso 498", CalcularOEE_Turno("T-498"), 0.614) Then aciertos = aciertos + 1
+
+    total = total + 1
+    If Test_Caso498_PuntaAPunta() Then aciertos = aciertos + 1
 
     total = total + 1
     If ExisteTurno("T-74-2") Then
@@ -50,7 +57,218 @@ Public Sub EjecutarPruebas()
     If Test_VigenciaParametros() Then aciertos = aciertos + 1
 
     Debug.Print "Resultado: " & aciertos & "/" & total
+    RunAllTests = (aciertos = total)
+End Function
+
+Public Function Test_Caso498_PuntaAPunta() As Boolean
+    Dim detalle As TDetalleTurno
+    Dim oee As Double
+    Dim tolerancia As Double
+    Dim ok As Boolean
+
+    tolerancia = ToleranciaComparacionPP()
+    detalle = DetalleTurno(DateSerial(2026, 9, 28), "RES-T")
+    oee = CalcularTurno(DateSerial(2026, 9, 28), "RES-T")
+
+    ok = detalle.Encontrado _
+        And CercaMinutos(detalle.TO, 330, tolerancia) _
+        And CercaPP(CDbl(detalle.Disponibilidad), 0.8148, tolerancia) _
+        And CercaPP(CDbl(detalle.Rendimiento), 0.7534, tolerancia) _
+        And CercaPP(CDbl(detalle.Calidad), 0.9998, tolerancia) _
+        And CercaPP(oee, 0.6138, tolerancia)
+
+    Debug.Print "Caso 498 punta a punta: " & IIf(ok, "OK", "ERROR") & _
+        " (TO=" & Format$(detalle.TO, "0.00") & _
+        ", D=" & Format$(CDbl(detalle.Disponibilidad), "0.00%") & _
+        ", R=" & Format$(CDbl(detalle.Rendimiento), "0.00%") & _
+        ", C=" & Format$(CDbl(detalle.Calidad), "0.00%") & _
+        ", OEE=" & Format$(oee, "0.00%") & ")"
+    Test_Caso498_PuntaAPunta = ok
+End Function
+
+Public Sub ReporteCaso498()
+    Dim ws As Worksheet
+    Dim detalle As TDetalleTurno
+    Dim tolerancia As Double
+    Dim fila As Long
+
+    Set ws = ThisWorkbook.Worksheets("90_Tests")
+    ws.Range("A1:J40").ClearContents
+    ws.Range("A1:J40").ClearFormats
+
+    tolerancia = ToleranciaComparacionPP()
+    detalle = DetalleTurno(DateSerial(2026, 9, 28), "RES-T")
+
+    ws.Cells(1, 1).Value = "Caso 498 - Reporte de Produccion Nro. 498 - 2026-09-28 - turno RES-T"
+    ws.Cells(2, 1).Value = "Comparacion contra Q-18 (limpiezas micro) y D-01 (limpiezas A y C) - tolerancia P-08: " & Format$(tolerancia, "0.00") & " pp"
+    ws.Cells(1, 1).Font.Bold = True
+    ws.Cells(1, 1).Font.Size = 12
+
+    If Not detalle.Encontrado Then
+        ws.Cells(4, 1).Value = "No se encontro el turno 2026-09-28 / RES-T."
+        Exit Sub
+    End If
+
+    ws.Cells(4, 1).Value = "Valores intermedios calculados por el libro"
+    ws.Cells(4, 1).Font.Bold = True
+    ws.Cells(5, 1).Value = "Indicador"
+    ws.Cells(5, 2).Value = "Calculado"
+    ws.Range(ws.Cells(5, 1), ws.Cells(5, 2)).Font.Bold = True
+    ws.Range(ws.Cells(5, 1), ws.Cells(5, 2)).Interior.Color = RGB(221, 235, 247)
+
+    fila = 6
+    EscribirValor ws, fila, "TD (min)", detalle.TD, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "PP (min)", detalle.PP, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "PE (min)", detalle.PE, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "A/F (min)", detalle.AF, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "A y C (min)", detalle.AC, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "Microparadas (min)", detalle.Micro, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "TPL (min)", detalle.TPL, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "TO (min)", detalle.TO, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "Tiempo ideal (min)", detalle.TiempoIdeal, "0.00"
+    fila = fila + 1
+    EscribirValor ws, fila, "Unidades buenas", detalle.UnidadesBuenas, "#,##0"
+    fila = fila + 1
+    EscribirValor ws, fila, "Unidades rechazadas", detalle.UnidadesRechazadas, "#,##0"
+    fila = fila + 1
+    EscribirValor ws, fila, "Unidades totales (UT)", detalle.UnidadesTotales, "#,##0"
+
+    fila = fila + 2
+    ws.Cells(fila, 1).Value = "Comparacion contra valores manuales"
+    ws.Cells(fila, 1).Font.Bold = True
+    fila = fila + 1
+    ws.Cells(fila, 1).Value = "Indicador"
+    ws.Cells(fila, 2).Value = "Calculado por el libro"
+    ws.Cells(fila, 3).Value = "Manual Q-18"
+    ws.Cells(fila, 4).Value = "Dif. Q-18"
+    ws.Cells(fila, 5).Value = "Resultado Q-18"
+    ws.Cells(fila, 6).Value = "Manual D-01"
+    ws.Cells(fila, 7).Value = "Dif. D-01"
+    ws.Cells(fila, 8).Value = "Resultado D-01"
+    ws.Range(ws.Cells(fila, 1), ws.Cells(fila, 8)).Font.Bold = True
+    ws.Range(ws.Cells(fila, 1), ws.Cells(fila, 8)).Interior.Color = RGB(221, 235, 247)
+
+    fila = fila + 1
+    EscribirComparacionDoble ws, fila, "TO (min)", detalle.TO, 375, 330, tolerancia, False, "0.00"
+    fila = fila + 1
+    EscribirComparacionDoble ws, fila, "Disponibilidad", CDbl(detalle.Disponibilidad), 0.926, 0.815, tolerancia, True, "0.00%"
+    fila = fila + 1
+    EscribirComparacionDoble ws, fila, "UT (unidades)", detalle.UnidadesTotales, 17404, 17404, tolerancia, False, "#,##0"
+    fila = fila + 1
+    EscribirComparacionDoble ws, fila, "Rendimiento", CDbl(detalle.Rendimiento), 0.663, 0.753, tolerancia, True, "0.00%"
+    fila = fila + 1
+    EscribirComparacionDoble ws, fila, "Calidad", CDbl(detalle.Calidad), 0.9998, 0.9998, tolerancia, True, "0.00%"
+    fila = fila + 1
+    EscribirComparacionDoble ws, fila, "OEE", detalle.OEE, 0.614, 0.614, tolerancia, True, "0.00%"
+
+    fila = fila + 2
+    ws.Cells(fila, 1).Value = "Diferencias: pp para D, R, C y OEE; min para TO; unidades para UT. PASA/FALLA con tolerancia P-08 (Doc 1.4)."
+    ws.Cells(fila, 1).Font.Italic = True
+    fila = fila + 1
+    ws.Cells(fila, 1).Value = "Q-18: limpiezas de la etiquetadora como microparada. D-01: limpiezas como A y C (decision pendiente)."
+    ws.Cells(fila, 1).Font.Italic = True
+
+    ws.Columns("A").ColumnWidth = 26
+    ws.Columns("B:H").ColumnWidth = 20
+    ws.Columns("A:H").AutoFit
+
+    Debug.Print "ReporteCaso498: TO=" & Format$(detalle.TO, "0.00") & _
+        ", Disponibilidad=" & Format$(CDbl(detalle.Disponibilidad), "0.00%") & _
+        ", UT=" & Format$(detalle.UnidadesTotales, "#,##0") & _
+        ", Rendimiento=" & Format$(CDbl(detalle.Rendimiento), "0.00%") & _
+        ", Calidad=" & Format$(CDbl(detalle.Calidad), "0.00%") & _
+        ", OEE=" & Format$(detalle.OEE, "0.00%")
 End Sub
+
+Private Sub EscribirValor(ByVal ws As Worksheet, ByVal fila As Long, ByVal nombre As String, ByVal valor As Double, ByVal formato As String)
+    ws.Cells(fila, 1).Value = nombre
+    ws.Cells(fila, 2).Value = valor
+    ws.Cells(fila, 2).NumberFormat = formato
+End Sub
+
+Private Sub EscribirComparacionDoble(ByVal ws As Worksheet, ByVal fila As Long, ByVal nombre As String, ByVal calculado As Double, ByVal manualQ18 As Double, ByVal manualD01 As Double, ByVal tolerancia As Double, ByVal esPorcentaje As Boolean, ByVal formatoValor As String)
+    Dim difQ18 As Double
+    Dim difD01 As Double
+    Dim resQ18 As String
+    Dim resD01 As String
+    Dim formatoDif As String
+
+    If esPorcentaje Then
+        difQ18 = (calculado - manualQ18) * 100
+        difD01 = (calculado - manualD01) * 100
+        formatoDif = "0.00"
+    Else
+        difQ18 = calculado - manualQ18
+        difD01 = calculado - manualD01
+        formatoDif = formatoValor
+    End If
+
+    resQ18 = IIf(Abs(difQ18) <= tolerancia, "PASA", "FALLA")
+    resD01 = IIf(Abs(difD01) <= tolerancia, "PASA", "FALLA")
+
+    ws.Cells(fila, 1).Value = nombre
+    ws.Cells(fila, 2).Value = calculado
+    ws.Cells(fila, 3).Value = manualQ18
+    ws.Cells(fila, 4).Value = difQ18
+    ws.Cells(fila, 5).Value = resQ18
+    ws.Cells(fila, 6).Value = manualD01
+    ws.Cells(fila, 7).Value = difD01
+    ws.Cells(fila, 8).Value = resD01
+
+    ws.Cells(fila, 2).NumberFormat = formatoValor
+    ws.Cells(fila, 3).NumberFormat = formatoValor
+    ws.Cells(fila, 4).NumberFormat = formatoDif
+    ws.Cells(fila, 6).NumberFormat = formatoValor
+    ws.Cells(fila, 7).NumberFormat = formatoDif
+
+    PintarResultado ws, fila, 5, resQ18
+    PintarResultado ws, fila, 8, resD01
+End Sub
+
+Private Sub PintarResultado(ByVal ws As Worksheet, ByVal fila As Long, ByVal columna As Long, ByVal resultado As String)
+    If resultado = "PASA" Then
+        ws.Cells(fila, columna).Interior.Color = RGB(198, 239, 206)
+    Else
+        ws.Cells(fila, columna).Interior.Color = RGB(255, 199, 206)
+    End If
+End Sub
+
+Private Function ToleranciaComparacionPP() As Double
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cParametro As Long
+    Dim cValor As Long
+    Dim i As Long
+
+    ToleranciaComparacionPP = 0.05
+
+    Set lo = Tabla("tblParametros")
+    If lo Is Nothing Then Exit Function
+
+    cParametro = IndiceColumnaTest(lo, "parametro")
+    cValor = IndiceColumnaTest(lo, "valor")
+    If cParametro = 0 Or cValor = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        If StrComp(CStr(rng.Cells(i, cParametro).Value), "TOLERANCIA_COMPARACION_PP", vbTextCompare) = 0 Then
+            If IsNumeric(rng.Cells(i, cValor).Value) Then
+                If CDbl(rng.Cells(i, cValor).Value) > 0 Then ToleranciaComparacionPP = CDbl(rng.Cells(i, cValor).Value)
+            End If
+            Exit Function
+        End If
+    Next i
+End Function
 
 Public Function Test_CeroUnidades() As Boolean
     Dim oee As Double
@@ -160,6 +378,14 @@ End Function
 
 Private Function Cerca(ByVal a As Double, ByVal b As Double) As Boolean
     Cerca = (Abs(a - b) <= TOLERANCIA)
+End Function
+
+Private Function CercaPP(ByVal calculado As Double, ByVal esperado As Double, ByVal tolerancia As Double) As Boolean
+    CercaPP = (Abs(calculado - esperado) * 100 <= tolerancia)
+End Function
+
+Private Function CercaMinutos(ByVal calculado As Double, ByVal esperado As Double, ByVal tolerancia As Double) As Boolean
+    CercaMinutos = (Abs(calculado - esperado) <= tolerancia)
 End Function
 
 Private Sub AgregarVelocidadTest(ByVal lo As ListObject, ByVal codigo As String, ByVal velocidad As Double, ByVal desde As Date, ByVal hasta As Date)

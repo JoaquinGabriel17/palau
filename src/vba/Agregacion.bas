@@ -7,10 +7,34 @@ Private Type TResumenTurno
     TD As Double
     PP As Double
     PE As Double
+    AF As Double
+    AC As Double
+    Micro As Double
     PNP As Double
     UnidadesBuenas As Double
     UnidadesRechazadas As Double
     TiempoIdeal As Double
+    Encontrado As Boolean
+End Type
+
+Public Type TDetalleTurno
+    TD As Double
+    PP As Double
+    PE As Double
+    AF As Double
+    AC As Double
+    Micro As Double
+    PNP As Double
+    TPL As Double
+    TO As Double
+    TiempoIdeal As Double
+    UnidadesBuenas As Double
+    UnidadesRechazadas As Double
+    UnidadesTotales As Double
+    Disponibilidad As Variant
+    Rendimiento As Variant
+    Calidad As Variant
+    OEE As Double
     Encontrado As Boolean
 End Type
 
@@ -20,18 +44,141 @@ Private Function NumeroSeguro(ByVal v As Variant) As Double
 End Function
 
 Public Function CalcularOEE_Turno(ByVal id_turno As String) As Double
+    Dim detalle As TDetalleTurno
+
+    detalle = DetalleTurnoPorId(id_turno)
+    CalcularOEE_Turno = detalle.OEE
+End Function
+
+Public Function CalcularTurno(ByVal fecha As Date, ByVal turno_codigo As String) As Double
+    Dim detalle As TDetalleTurno
+
+    detalle = DetalleTurno(fecha, turno_codigo)
+    CalcularTurno = detalle.OEE
+End Function
+
+Public Function DetalleTurno(ByVal fecha As Date, ByVal turno_codigo As String) As TDetalleTurno
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim ids As Collection
+    Dim resumen As TResumenTurno
+    Dim total As TResumenTurno
+    Dim cIdTurno As Long
+    Dim cFecha As Long
+    Dim cTurno As Long
+    Dim i As Long
+    Dim k As Variant
+    Dim dia As Date
+    Dim f As Date
+
+    Set lo = Tabla("tblTurnosRegistro")
+    If lo Is Nothing Then Exit Function
+
+    cIdTurno = IndiceColumna(lo, "id_turno")
+    cFecha = IndiceColumna(lo, "fecha")
+    cTurno = IndiceColumna(lo, "turno_codigo")
+    If cIdTurno = 0 Or cFecha = 0 Or cTurno = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    Set ids = New Collection
+    dia = DateSerial(Year(fecha), Month(fecha), Day(fecha))
+
+    For i = 1 To rng.Rows.Count
+        f = AFecha(rng.Cells(i, cFecha).Value)
+        If f > 0 Then
+            If DateSerial(Year(f), Month(f), Day(f)) = dia Then
+                If StrComp(Trim$(CStr(rng.Cells(i, cTurno).Value)), turno_codigo, vbTextCompare) = 0 Then
+                    AgregarUnico ids, CStr(rng.Cells(i, cIdTurno).Value)
+                End If
+            End If
+        End If
+    Next i
+
+    If ids.Count = 0 Then Exit Function
+
+    For Each k In ids
+        If ResumenTurno(CStr(k), resumen) Then
+            total.TD = total.TD + resumen.TD
+            total.PP = total.PP + resumen.PP
+            total.PE = total.PE + resumen.PE
+            total.AF = total.AF + resumen.AF
+            total.AC = total.AC + resumen.AC
+            total.Micro = total.Micro + resumen.Micro
+            total.PNP = total.PNP + resumen.PNP
+            total.UnidadesBuenas = total.UnidadesBuenas + resumen.UnidadesBuenas
+            total.UnidadesRechazadas = total.UnidadesRechazadas + resumen.UnidadesRechazadas
+            total.TiempoIdeal = total.TiempoIdeal + resumen.TiempoIdeal
+            total.Encontrado = True
+        End If
+    Next k
+
+    If Not total.Encontrado Then Exit Function
+
+    DetalleTurno = DetalleDesdeResumen(total)
+End Function
+
+Private Function DetalleTurnoPorId(ByVal id_turno As String) As TDetalleTurno
     Dim resumen As TResumenTurno
 
     If ResumenTurno(id_turno, resumen) Then
-        CalcularOEE_Turno = CalcularOEE_DesdeTotales( _
-            resumen.TD, _
-            resumen.PP, _
-            resumen.PE, _
-            resumen.PNP, _
-            resumen.UnidadesBuenas, _
-            resumen.UnidadesRechazadas, _
-            resumen.TiempoIdeal)
+        DetalleTurnoPorId = DetalleDesdeResumen(resumen)
     End If
+End Function
+
+Private Function DetalleDesdeResumen(ByRef resumen As TResumenTurno) As TDetalleTurno
+    Dim detalle As TDetalleTurno
+
+    detalle = DetalleDesdeTotales( _
+        resumen.TD, _
+        resumen.PP, _
+        resumen.PE, _
+        resumen.AF, _
+        resumen.AC, _
+        resumen.Micro, _
+        resumen.PNP, _
+        resumen.UnidadesBuenas, _
+        resumen.UnidadesRechazadas, _
+        resumen.TiempoIdeal)
+    detalle.Encontrado = resumen.Encontrado
+    DetalleDesdeResumen = detalle
+End Function
+
+Private Function DetalleDesdeTotales(ByVal TD As Double, ByVal PP As Double, ByVal PE As Double, ByVal AF As Double, ByVal AC As Double, ByVal Micro As Double, ByVal PNP As Double, ByVal UnidadesBuenas As Double, ByVal UnidadesRechazadas As Double, ByVal TiempoIdealMin As Double) As TDetalleTurno
+    Dim detalle As TDetalleTurno
+    Dim velEfectiva As Double
+
+    detalle.TD = TD
+    detalle.PP = PP
+    detalle.PE = PE
+    detalle.AF = AF
+    detalle.AC = AC
+    detalle.Micro = Micro
+    detalle.PNP = PNP
+
+    detalle.TPL = TD - PP - PE
+    If detalle.TPL < 0 Then detalle.TPL = 0
+
+    detalle.TO = CalcularTO(detalle.TPL, PNP)
+    If detalle.TO < 0 Then detalle.TO = 0
+
+    detalle.TiempoIdeal = TiempoIdealMin
+    detalle.UnidadesBuenas = UnidadesBuenas
+    detalle.UnidadesRechazadas = UnidadesRechazadas
+    detalle.UnidadesTotales = UnidadesBuenas + UnidadesRechazadas
+
+    If TiempoIdealMin > 0 Then velEfectiva = detalle.UnidadesTotales / TiempoIdealMin
+
+    detalle.Disponibilidad = CalcularDisponibilidad(detalle.TO, detalle.TPL)
+    detalle.Rendimiento = CalcularRendimientoOEE(detalle.UnidadesTotales, velEfectiva, detalle.TO)
+    detalle.Calidad = CalcularCalidad(detalle.UnidadesBuenas, detalle.UnidadesTotales)
+    detalle.OEE = CalcularOEE( _
+        NumeroSeguro(detalle.Disponibilidad), _
+        NumeroSeguro(detalle.Rendimiento), _
+        NumeroSeguro(detalle.Calidad))
+
+    DetalleDesdeTotales = detalle
 End Function
 
 Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResumenTurno) As Boolean
@@ -83,6 +230,9 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
     Dim td As Double
     Dim pp As Double
     Dim pe As Double
+    Dim af As Double
+    Dim ac As Double
+    Dim micro As Double
     Dim pnp As Double
     Dim prod As Double
     Dim rech As Double
@@ -177,11 +327,18 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
                     tipo = ""
                     If cTipoParada > 0 Then tipo = UCase$(Trim$(CStr(rng.Cells(i, cTipoParada).Value)))
                     If dur <= umbral Or tipo = "TP-05" Then
+                        micro = micro + dur
                         dur = 0
                     ElseIf tipo = "TP-01" Then
                         pp = pp + dur
                     ElseIf tipo = "TP-07" Then
                         pe = pe + dur
+                    ElseIf tipo = "TP-03" Then
+                        af = af + dur
+                        pnp = pnp + dur
+                    ElseIf tipo = "TP-04" Then
+                        ac = ac + dur
+                        pnp = pnp + dur
                     Else
                         pnp = pnp + dur
                     End If
@@ -275,6 +432,9 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
     resumen.TD = td
     resumen.PP = pp
     resumen.PE = pe
+    resumen.AF = af
+    resumen.AC = ac
+    resumen.Micro = micro
     resumen.PNP = pnp
     resumen.UnidadesBuenas = buenas
     resumen.UnidadesRechazadas = rech
@@ -284,23 +444,10 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
 End Function
 
 Public Function CalcularOEE_DesdeTotales(ByVal TD As Double, ByVal PP As Double, ByVal PE As Double, ByVal PNP As Double, ByVal UnidadesBuenas As Double, ByVal UnidadesRechazadas As Double, ByVal TiempoIdealMin As Double) As Double
-    Dim tpl As Double
-    Dim tOper As Double
-    Dim total As Double
-    Dim velEfectiva As Double
+    Dim detalle As TDetalleTurno
 
-    tpl = TD - PP - PE
-    If tpl < 0 Then tpl = 0
-    tOper = CalcularTO(tpl, PNP)
-    If tOper < 0 Then tOper = 0
-
-    total = UnidadesBuenas + UnidadesRechazadas
-    If TiempoIdealMin > 0 Then velEfectiva = total / TiempoIdealMin
-
-    CalcularOEE_DesdeTotales = CalcularOEE( _
-        NumeroSeguro(CalcularDisponibilidad(tOper, tpl)), _
-        NumeroSeguro(CalcularRendimientoOEE(total, velEfectiva, tOper)), _
-        NumeroSeguro(CalcularCalidad(UnidadesBuenas, total)))
+    detalle = DetalleDesdeTotales(TD, PP, PE, 0, 0, 0, PNP, UnidadesBuenas, UnidadesRechazadas, TiempoIdealMin)
+    CalcularOEE_DesdeTotales = detalle.OEE
 End Function
 
 Public Function CalcularOEE_Dia(ByVal fecha As Date) As Double
