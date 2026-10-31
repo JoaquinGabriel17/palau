@@ -3,7 +3,7 @@
 Planta embotelladora de agua · Proyecto de cálculo de OEE en Excel con VBA
 
 - **Versión del documento:** v0.5
-- **Última actualización:** 2026-10-29
+- **Última actualización:** 2026-10-30
 
 ## 0. Reglas de este documento
 
@@ -409,8 +409,11 @@ Este caso es la referencia para validar el cálculo del libro.
 
 ### 7.3 Resultado del libro y diferencia
 
-- OEE calculado por el libro: [ ]
-- Diferencia: [ ]
+- Datos del libro: la baja tensión de 20:40–21:10 es una reducción de velocidad (Q-18) y no está en `tblParadas`; TO = 405 − 45 de A y C − 30 de A/F = **330 min**.
+- OEE calculado por el libro: **61,38%** (Disponibilidad **81,48%**, Rendimiento **75,34%**, Calidad **99,98%**).
+- Contra **D-01** (limpiezas de 15/10/20 min como A y C): TO 330 min, Disponibilidad 81,5%, Rendimiento 75,3%, Calidad 99,98%, OEE 61,4%. Diferencias: D −0,02 pp, R +0,04 pp, C 0,00 pp, OEE −0,02 pp; todas dentro de la tolerancia P-08.
+- Contra **Q-18** (limpiezas como microparada): TO 375 min, Disponibilidad 92,6%, Rendimiento 66,3%, Calidad 99,98%, OEE 61,4%. Diferencias: D −11,12 pp, R +9,04 pp, C 0,00 pp, OEE −0,02 pp. La diferencia en D y R **no es un error de cálculo**: es el efecto de la decisión D-01, todavía pendiente, sobre cómo se clasifican las limpiezas. El OEE coincide en ambos criterios.
+- Comparación automática: `90_Tests`, macro `ReporteCaso498`, con las columnas manuales de Q-18 y D-01 y la tolerancia P-08.
 - Aprobado por / fecha: [ ]
 
 ### 7.4 Casos adicionales
@@ -588,6 +591,7 @@ Por cada pregunta: número, pregunta, fecha, responsable, estado.
 - **2026-10-27** · v0.3: las secciones 1, 3, 4 y 5 pasan a Aprobado; se carga el caso de prueba en 7.1 y 7.2 desde el Reporte Nº 498 · Joaquín · aprobación de 1, 3, 4 y 5: ingeniero [confirmar nombre].
 - **2026-10-28** · v0.4: se incorporan respuestas del ingeniero (Q-01, Q-02, Q-04, Q-10, Q-16, Q-18); se cargan horarios SOP, fecha del turno nocturno, velocidades y productos; se actualiza el caso 7.1/7.2; se cargan 4 casos de 7.4; se aprueba tolerancia 1.4 y RN-01 a RN-09 · Joaquín · aprobación: ingeniero [confirmar nombre], 2026-10-28.
 - **2026-10-29** · v0.5: microparada = **5 minutos o menos**; A/F y A y C = **más de 5 minutos**; se actualizan 3.2, 3.3, 3.4, 4.3, 4.4, 4.9, 5.1, RN-03, RN-04, Q-07 y nota 7.2; se agrega 4.11 con tabla de parámetros (8 parámetros, con columna Nombre; se eliminan P-09 a P-12); se corrige catálogo de tipos de parada (TP-01 PP, TP-02 PNP cabecera, TP-03 A/F, TP-04 A y C, TP-05 micro ≤5, TP-06 sin clasificar, TP-07 PE); se cierra Q-05, Q-07, Q-09 y Q-12; se agrega modelo turno–lote con `id_turno_lote`; se define nombre de línea supuesto; se agrega estructura de hojas y tablas del xlsm; se registra D-01 y D-02 · Joaquín · estado: Propuesto (falta aprobación del ingeniero).
+- **2026-10-30** · Se corrige la carga del caso 498: la baja tensión sale de `tblParadas` porque es reducción de velocidad (Q-18). Se completa 7.3 con el resultado del libro y la comparación contra Q-18 y D-01; se agrega el caso punta a punta y la comparación automática en `90_Tests` (macro `ReporteCaso498`) y la función `DetalleTurno` en `Agregacion` · Joaquín · estado: Propuesto.
 
 ## 14. Control de versiones del archivo Excel
 
