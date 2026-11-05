@@ -206,7 +206,6 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
     Dim cIdTurno As Long
     Dim cIdTurnoLote As Long
     Dim cIdLote As Long
-    Dim cFecha As Long
     Dim cTurnoCodigo As Long
     Dim cInicio As Long
     Dim cFin As Long
@@ -231,9 +230,9 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
     Dim producto As String
     Dim tipo As String
     Dim turnoCodigo As String
-    Dim dtIni As Date
-    Dim dtFin As Date
-    Dim dtTurno As Date
+    Dim fIni As Date
+    Dim fFin As Date
+    Dim durSeg As Double
     Dim hayTurno As Boolean
     Dim dur As Double
     Dim umbral As Double
@@ -268,7 +267,6 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
     If cIdTurno = 0 Then Exit Function
     cIdTurnoLote = Utils.IndiceColumna(loTurnos, "id_turno_lote")
     cIdLote = Utils.IndiceColumna(loTurnos, "id_lote")
-    cFecha = Utils.IndiceColumna(loTurnos, "fecha")
     cTurnoCodigo = Utils.IndiceColumna(loTurnos, "turno_codigo")
     cInicio = Utils.IndiceColumna(loTurnos, "fecha_hora_inicio")
     cFin = Utils.IndiceColumna(loTurnos, "fecha_hora_fin")
@@ -290,17 +288,14 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
                         lote = CStr(rng.Cells(i, cIdLote).Value)
                         AgregarUnico lotes, lote
                     End If
-                    If cFecha > 0 And dtTurno = 0 Then dtTurno = Utils.AFecha(rng.Cells(i, cFecha).Value)
                     If cTurnoCodigo > 0 And Len(turnoCodigo) = 0 Then turnoCodigo = CStr(rng.Cells(i, cTurnoCodigo).Value)
                     If cInicio > 0 And cFin > 0 Then
-                        If Utils.AFecha(rng.Cells(i, cInicio).Value) > 0 And Utils.AFecha(rng.Cells(i, cFin).Value) > 0 Then
-                            If Not hayTurno Then
-                                dtIni = Utils.AFecha(rng.Cells(i, cInicio).Value)
-                                dtFin = Utils.AFecha(rng.Cells(i, cFin).Value)
-                            Else
-                                If Utils.AFecha(rng.Cells(i, cInicio).Value) < dtIni Then dtIni = Utils.AFecha(rng.Cells(i, cInicio).Value)
-                                If Utils.AFecha(rng.Cells(i, cFin).Value) > dtFin Then dtFin = Utils.AFecha(rng.Cells(i, cFin).Value)
-                            End If
+                        fIni = Utils.AFecha(rng.Cells(i, cInicio).Value)
+                        fFin = Utils.AFecha(rng.Cells(i, cFin).Value)
+                        If fIni > 0 And fFin > 0 Then
+                            durSeg = DateDiff("n", fIni, fFin)
+                            If durSeg < 0 Then durSeg = durSeg + 1440
+                            td = td + durSeg
                             hayTurno = True
                         End If
                     End If
@@ -311,10 +306,6 @@ Private Function ResumenTurno(ByVal id_turno As String, ByRef resumen As TResume
 
     If Not hayTurno And segs.Count = 0 Then Exit Function
 
-    If dtIni > 0 And dtFin > 0 Then
-        td = DateDiff("n", dtIni, dtFin)
-        If td < 0 Then td = td + 1440
-    End If
     If td <= 0 Then td = TDDesdeCatalogo(turnoCodigo)
 
     umbral = UmbralMicro()

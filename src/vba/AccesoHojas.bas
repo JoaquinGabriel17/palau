@@ -130,6 +130,7 @@ Public Function CrearReporte( _
     idNuevo = SiguienteId(lo, "id_turno_lote", "T", fecha)
 
     Set fila = lo.ListRows.Add
+    idTurnoLote = idNuevo
 
     SetValor lo, fila, "id_turno", idTurno
     SetValor lo, fila, "id_turno_lote", idNuevo
@@ -149,7 +150,6 @@ Public Function CrearReporte( _
     SetValor lo, fila, "fecha_hora_inicio", ini
     SetValor lo, fila, "fecha_hora_fin", fin
 
-    idTurnoLote = idNuevo
     CrearReporte = True
 End Function
 
@@ -358,6 +358,7 @@ Public Function CrearParada( _
 
     idNuevo = SiguienteId(lo, "id", "P", reporte.fecha)
     Set fila = lo.ListRows.Add
+    idParada = idNuevo
 
     SetValor lo, fila, "id", idNuevo
     SetValor lo, fila, "fecha", reporte.fecha
@@ -375,7 +376,6 @@ Public Function CrearParada( _
     SetValor lo, fila, "interpretada", ValorSino(interpretada)
     SetValor lo, fila, "observaciones", observaciones
 
-    idParada = idNuevo
     If res.Resultado = ResultadoValidacion.AVISA Then MarcarPendiente idTurnoLote
     CrearParada = True
 End Function
@@ -704,9 +704,14 @@ Public Function AgregarValorNuevo(ByVal tabla As String, ByVal valor As String, 
     Dim s As String
     Dim prefijo As String
     Dim codigo As String
+    Dim extras As Object
 
     valor = Trim$(valor)
     If Len(valor) = 0 Then Exit Function
+
+    Set extras = CreateObject("Scripting.Dictionary")
+    extras.CompareMode = 1
+    CargarColumnasExtra extras, columnasExtra
 
     Set lo = Utils.Tabla(tabla)
     If lo Is Nothing Then Exit Function
@@ -733,19 +738,15 @@ Public Function AgregarValorNuevo(ByVal tabla As String, ByVal valor As String, 
     SetValor lo, fila, "codigo", codigo
     SetValor lo, fila, columna, valor
     SetValor lo, fila, "activo", TextoSi()
-    AplicarColumnasExtra lo, fila, columna, columnasExtra
+    AplicarColumnasExtra lo, fila, columna, extras
 
     AgregarValorNuevo = codigo
 End Function
 
-Private Sub AplicarColumnasExtra(ByVal lo As ListObject, ByVal fila As ListRow, _
-        ByVal columnaPrincipal As String, ByVal columnasExtra As Variant)
-
+Private Sub CargarColumnasExtra(ByVal destino As Object, ByVal columnasExtra As Variant)
     Dim i As Long
     Dim lb As Long
     Dim ub As Long
-    Dim nCols As Long
-    Dim col As String
     Dim k As Variant
 
     If IsEmpty(columnasExtra) Or IsNull(columnasExtra) Then Exit Sub
@@ -753,12 +754,7 @@ Private Sub AplicarColumnasExtra(ByVal lo As ListObject, ByVal fila As ListRow, 
     If IsObject(columnasExtra) Then
         If TypeName(columnasExtra) = "Dictionary" Then
             For Each k In columnasExtra.Keys
-                col = Trim$(CStr(k))
-                If EsColumnaExtraValida(col, columnaPrincipal) Then
-                    If Utils.IndiceColumna(lo, col) > 0 Then
-                        SetValor lo, fila, col, columnasExtra(k)
-                    End If
-                End If
+                destino(CStr(k)) = columnasExtra(k)
             Next k
         End If
         Exit Sub
@@ -768,22 +764,33 @@ Private Sub AplicarColumnasExtra(ByVal lo As ListObject, ByVal fila As ListRow, 
         On Error GoTo Fin
         lb = LBound(columnasExtra, 1)
         ub = UBound(columnasExtra, 1)
-        nCols = UBound(columnasExtra, 2) - LBound(columnasExtra, 2) + 1
-        If nCols < 2 Then Exit Sub
-
         For i = lb To ub
-            col = Trim$(CStr(columnasExtra(i, LBound(columnasExtra, 2))))
-            If EsColumnaExtraValida(col, columnaPrincipal) Then
-                If Utils.IndiceColumna(lo, col) > 0 Then
-                    SetValor lo, fila, col, columnasExtra(i, LBound(columnasExtra, 2) + 1)
-                End If
-            End If
+            destino(CStr(columnasExtra(i, LBound(columnasExtra, 2)))) = _
+                columnasExtra(i, LBound(columnasExtra, 2) + 1)
         Next i
     End If
     Exit Sub
 
 Fin:
     On Error GoTo 0
+End Sub
+
+Private Sub AplicarColumnasExtra(ByVal lo As ListObject, ByVal fila As ListRow, _
+        ByVal columnaPrincipal As String, ByVal extras As Object)
+
+    Dim col As String
+    Dim k As Variant
+
+    If extras Is Nothing Then Exit Sub
+
+    For Each k In extras.Keys
+        col = Trim$(CStr(k))
+        If EsColumnaExtraValida(col, columnaPrincipal) Then
+            If Utils.IndiceColumna(lo, col) > 0 Then
+                SetValor lo, fila, col, extras(k)
+            End If
+        End If
+    Next k
 End Sub
 
 Private Function EsColumnaExtraValida(ByVal columna As String, ByVal columnaPrincipal As String) As Boolean
@@ -845,6 +852,557 @@ Public Function ObtenerParametro(ByVal nombre As String, Optional ByVal fecha As
 
     If encontrado Then ObtenerParametro = mejorValor
 End Function
+
+Public Function ListarParadas(ByVal idTurnoLote As String) As Collection
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cSeg As Long
+    Dim i As Long
+    Dim col As Collection
+
+    Set col = New Collection
+    Set ListarParadas = col
+
+    If Len(Trim$(idTurnoLote)) = 0 Then Exit Function
+
+    Set lo = Utils.Tabla("tblParadas")
+    If lo Is Nothing Then Exit Function
+
+    cSeg = Utils.IndiceColumna(lo, "id_turno_lote")
+    If cSeg = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        If StrComp(ValorTexto(rng.Cells(i, 1), cSeg), idTurnoLote, vbTextCompare) = 0 Then
+            col.Add ItemParada(rng.Cells(i, 1), lo)
+        End If
+    Next i
+End Function
+
+Private Function ItemParada(ByVal rng As Range, ByVal lo As ListObject) As Object
+    Dim d As Object
+
+    Set d = CreateObject("Scripting.Dictionary")
+    d.CompareMode = 1
+    d("id") = ValorTexto(rng, Utils.IndiceColumna(lo, "id"))
+    d("fecha") = ValorFecha(rng, Utils.IndiceColumna(lo, "fecha"))
+    d("turno") = ValorTexto(rng, Utils.IndiceColumna(lo, "turno"))
+    d("linea_id") = ValorVariant(rng, Utils.IndiceColumna(lo, "linea_id"))
+    d("id_lote") = ValorTexto(rng, Utils.IndiceColumna(lo, "id_lote"))
+    d("id_turno_lote") = ValorTexto(rng, Utils.IndiceColumna(lo, "id_turno_lote"))
+    d("fecha_hora_inicio") = ValorFecha(rng, Utils.IndiceColumna(lo, "fecha_hora_inicio"))
+    d("fecha_hora_fin") = ValorFecha(rng, Utils.IndiceColumna(lo, "fecha_hora_fin"))
+    d("duracion_min") = ValorNumero(rng, Utils.IndiceColumna(lo, "duracion_min"))
+    d("origen") = ValorTexto(rng, Utils.IndiceColumna(lo, "origen"))
+    d("motivo") = ValorTexto(rng, Utils.IndiceColumna(lo, "motivo"))
+    d("tipo") = ValorTexto(rng, Utils.IndiceColumna(lo, "tipo"))
+    d("codigo") = ValorTexto(rng, Utils.IndiceColumna(lo, "codigo"))
+    d("interpretada") = ValorTexto(rng, Utils.IndiceColumna(lo, "interpretada"))
+    d("observaciones") = ValorTexto(rng, Utils.IndiceColumna(lo, "observaciones"))
+    Set ItemParada = d
+End Function
+
+Public Function ListarRechazos(ByVal idTurnoLote As String) As Collection
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cSeg As Long
+    Dim i As Long
+    Dim col As Collection
+
+    Set col = New Collection
+    Set ListarRechazos = col
+
+    If Len(Trim$(idTurnoLote)) = 0 Then Exit Function
+
+    Set lo = Utils.Tabla("tblRechazos")
+    If lo Is Nothing Then Exit Function
+
+    cSeg = Utils.IndiceColumna(lo, "id_turno_lote")
+    If cSeg = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        If StrComp(ValorTexto(rng.Cells(i, 1), cSeg), idTurnoLote, vbTextCompare) = 0 Then
+            col.Add ItemRechazo(rng.Cells(i, 1), lo)
+        End If
+    Next i
+End Function
+
+Private Function ItemRechazo(ByVal rng As Range, ByVal lo As ListObject) As Object
+    Dim d As Object
+
+    Set d = CreateObject("Scripting.Dictionary")
+    d.CompareMode = 1
+    d("fecha") = ValorFecha(rng, Utils.IndiceColumna(lo, "fecha"))
+    d("turno") = ValorTexto(rng, Utils.IndiceColumna(lo, "turno"))
+    d("lote") = ValorTexto(rng, Utils.IndiceColumna(lo, "lote"))
+    d("id_turno_lote") = ValorTexto(rng, Utils.IndiceColumna(lo, "id_turno_lote"))
+    d("seccion") = ValorTexto(rng, Utils.IndiceColumna(lo, "seccion"))
+    d("motivo") = ValorTexto(rng, Utils.IndiceColumna(lo, "motivo"))
+    d("cantidad") = ValorNumero(rng, Utils.IndiceColumna(lo, "cantidad"))
+    d("detalle") = ValorTexto(rng, Utils.IndiceColumna(lo, "detalle"))
+    Set ItemRechazo = d
+End Function
+
+Public Function ListarReportes(ByVal fecha As Date, ByVal turno As String) As Collection
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cId As Long
+    Dim cFecha As Long
+    Dim cTurno As Long
+    Dim cAnulado As Long
+    Dim i As Long
+    Dim f As Date
+    Dim col As Collection
+    Dim reporte As TDatosReporte
+
+    Set col = New Collection
+    Set ListarReportes = col
+
+    Set lo = Utils.Tabla("tblTurnosRegistro")
+    If lo Is Nothing Then Exit Function
+
+    cId = Utils.IndiceColumna(lo, "id_turno_lote")
+    cFecha = Utils.IndiceColumna(lo, "fecha")
+    cTurno = Utils.IndiceColumna(lo, "turno_codigo")
+    cAnulado = Utils.IndiceColumna(lo, "anulado")
+    If cId = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        If Not Utils.EsAnulado(ValorTexto(rng.Cells(i, 1), cAnulado)) Then
+            f = 0
+            If cFecha > 0 Then f = ValorFecha(rng.Cells(i, 1), cFecha)
+            If (fecha = 0 Or (f > 0 And Int(f) = Int(fecha))) And _
+               (Len(Trim$(turno)) = 0 Or StrComp(ValorTexto(rng.Cells(i, 1), cTurno), turno, vbTextCompare) = 0) Then
+                reporte = LeerReporte(ValorTexto(rng.Cells(i, 1), cId))
+                If reporte.Encontrado Then col.Add ItemReporte(reporte)
+            End If
+        End If
+    Next i
+End Function
+
+Private Function ItemReporte(ByRef d As TDatosReporte) As Object
+    Dim item As Object
+
+    Set item = CreateObject("Scripting.Dictionary")
+    item.CompareMode = 1
+    item("id_turno") = d.id_turno
+    item("id_turno_lote") = d.id_turno_lote
+    item("id_lote") = d.id_lote
+    item("producto") = d.producto
+    item("nro_reporte") = d.nro_reporte
+    item("fecha") = d.fecha
+    item("turno_codigo") = d.turno_codigo
+    item("equipo") = d.equipo
+    item("encargado") = d.encargado
+    item("estado_revision") = d.estado_revision
+    item("anulado") = d.anulado
+    item("notas_sin_horario") = d.notas_sin_horario
+    item("observaciones") = d.observaciones
+    item("velocidad_informada") = d.velocidad_informada
+    item("control_calidad") = d.control_calidad
+    item("nro_registro_sopladora") = d.nro_registro_sopladora
+    item("registros_bolsones") = d.registros_bolsones
+    item("fecha_hora_inicio") = d.fecha_hora_inicio
+    item("fecha_hora_fin") = d.fecha_hora_fin
+    Set ItemReporte = item
+End Function
+
+Public Function ListarCatalogo(ByVal tabla As String, ByVal columnaTexto As String, _
+        Optional ByVal filtroColumna As String = "", Optional ByVal filtroValor As String = "") As Collection
+
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cCodigo As Long
+    Dim cTexto As Long
+    Dim cFiltro As Long
+    Dim cActivo As Long
+    Dim i As Long
+    Dim sCodigo As String
+    Dim sTexto As String
+    Dim sFiltro As String
+    Dim col As Collection
+    Dim item As Object
+
+    Set col = New Collection
+    Set ListarCatalogo = col
+
+    Set lo = Utils.Tabla(tabla)
+    If lo Is Nothing Then Exit Function
+
+    cCodigo = Utils.IndiceColumna(lo, "codigo")
+    If cCodigo = 0 Then cCodigo = Utils.IndiceColumna(lo, "id_lote")
+    cTexto = Utils.IndiceColumna(lo, columnaTexto)
+    If cCodigo = 0 Or cTexto = 0 Then Exit Function
+
+    If Len(Trim$(filtroColumna)) > 0 Then
+        cFiltro = Utils.IndiceColumna(lo, filtroColumna)
+        If cFiltro = 0 Then Exit Function
+    End If
+
+    cActivo = Utils.IndiceColumna(lo, "activo")
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        sTexto = ValorTexto(rng.Cells(i, 1), cTexto)
+        If Len(Trim$(sTexto)) > 0 Then
+            If cActivo = 0 Or EsActivo(ValorTexto(rng.Cells(i, 1), cActivo)) Then
+                sFiltro = ""
+                If cFiltro > 0 Then sFiltro = ValorTexto(rng.Cells(i, 1), cFiltro)
+                If Len(Trim$(filtroValor)) = 0 Or StrComp(sFiltro, filtroValor, vbTextCompare) = 0 Then
+                    sCodigo = ValorTexto(rng.Cells(i, 1), cCodigo)
+                    If Len(Trim$(sCodigo)) > 0 Then
+                        Set item = CreateObject("Scripting.Dictionary")
+                        item.CompareMode = 1
+                        item("codigo") = sCodigo
+                        item("texto") = sTexto
+                        col.Add item
+                    End If
+                End If
+            End If
+        End If
+    Next i
+End Function
+
+Public Function BuscarOCrearLote(ByVal numeroLote As String, ByVal producto As String, _
+        ByVal fecha As Date) As String
+
+    Dim lo As ListObject
+    Dim loProd As ListObject
+    Dim filaProd As ListRow
+    Dim fila As ListRow
+    Dim rng As Range
+    Dim cNum As Long
+    Dim cIni As Long
+    Dim cId As Long
+    Dim cProd As Long
+    Dim cActivo As Long
+    Dim i As Long
+    Dim sNum As String
+    Dim sProd As String
+    Dim dIni As Date
+    Dim anio As Long
+    Dim res As TResultadoValidacion
+    Dim idNuevo As String
+
+    numeroLote = Trim$(numeroLote)
+    producto = Trim$(producto)
+
+    If Len(numeroLote) = 0 Or Len(producto) = 0 Then Exit Function
+    If fecha = 0 Then fecha = Date
+    anio = Year(fecha)
+
+    res = ValidarLote(numeroLote)
+    If res.Resultado = ResultadoValidacion.BLOQUEA Then Exit Function
+
+    Set loProd = Utils.Tabla("tblProductos")
+    If loProd Is Nothing Then Exit Function
+    Set filaProd = BuscarFila(loProd, "codigo", producto)
+    If filaProd Is Nothing Then Exit Function
+    cActivo = Utils.IndiceColumna(loProd, "activo")
+    If cActivo > 0 Then
+        If Not EsActivo(ValorTexto(filaProd.Range, cActivo)) Then Exit Function
+    End If
+
+    Set lo = Utils.Tabla("tblLotes")
+    If lo Is Nothing Then Exit Function
+
+    cNum = Utils.IndiceColumna(lo, "numero_lote")
+    cIni = Utils.IndiceColumna(lo, "fecha_hora_inicio")
+    cId = Utils.IndiceColumna(lo, "id_lote")
+    cProd = Utils.IndiceColumna(lo, "producto")
+    If cNum = 0 Or cId = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If Not rng Is Nothing Then
+        For i = 1 To rng.Rows.Count
+            sNum = ValorTexto(rng.Cells(i, 1), cNum)
+            If StrComp(sNum, numeroLote, vbTextCompare) = 0 Then
+                dIni = 0
+                If cIni > 0 Then dIni = ValorFecha(rng.Cells(i, 1), cIni)
+                If dIni > 0 Then
+                    If Year(dIni) = anio Then
+                        sProd = ""
+                        If cProd > 0 Then sProd = ValorTexto(rng.Cells(i, 1), cProd)
+                        If StrComp(sProd, producto, vbTextCompare) = 0 Then
+                            BuscarOCrearLote = ValorTexto(rng.Cells(i, 1), cId)
+                        End If
+                        Exit Function
+                    End If
+                End If
+            End If
+        Next i
+    End If
+
+    idNuevo = SiguienteId(lo, "id_lote", "L", fecha)
+    Set fila = lo.ListRows.Add
+    SetValor lo, fila, "id_lote", idNuevo
+    SetValor lo, fila, "numero_lote", numeroLote
+    SetValor lo, fila, "producto", producto
+    SetValor lo, fila, "fecha_hora_inicio", fecha
+    SetValor lo, fila, "fecha_hora_fin", Empty
+
+    BuscarOCrearLote = idNuevo
+End Function
+
+Public Function ListarTramos(ByVal idTurnoLote As String) As Collection
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cSeg As Long
+    Dim cIni As Long
+    Dim cFin As Long
+    Dim i As Long
+    Dim col As Collection
+    Dim item As Object
+
+    Set col = New Collection
+    Set ListarTramos = col
+
+    If Len(Trim$(idTurnoLote)) = 0 Then Exit Function
+
+    Set lo = Utils.Tabla("tblTramosSinEnvase")
+    If lo Is Nothing Then Exit Function
+
+    cSeg = Utils.IndiceColumna(lo, "id_turno_lote")
+    cIni = Utils.IndiceColumna(lo, "fecha_hora_inicio")
+    cFin = Utils.IndiceColumna(lo, "fecha_hora_fin")
+    If cSeg = 0 Or cIni = 0 Or cFin = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        If StrComp(ValorTexto(rng.Cells(i, 1), cSeg), idTurnoLote, vbTextCompare) = 0 Then
+            Set item = CreateObject("Scripting.Dictionary")
+            item.CompareMode = 1
+            item("id_turno_lote") = idTurnoLote
+            item("fecha_hora_inicio") = ValorFecha(rng.Cells(i, 1), cIni)
+            item("fecha_hora_fin") = ValorFecha(rng.Cells(i, 1), cFin)
+            col.Add item
+        End If
+    Next i
+End Function
+
+Public Function CrearTramo(ByVal idTurnoLote As String, ByVal inicio As Date, ByVal fin As Date, _
+        Optional ByRef mensaje As String = "") As Boolean
+
+    Dim reporte As TDatosReporte
+    Dim lo As ListObject
+    Dim fila As ListRow
+    Dim tramos As Collection
+    Dim item As Variant
+    Dim tIni As Date
+    Dim tFin As Date
+
+    mensaje = ""
+
+    If Not ValidarYLeerReporte(idTurnoLote, reporte, mensaje) Then Exit Function
+
+    If inicio <= 0 Or fin <= 0 Then
+        mensaje = "El tramo debe tener hora de inicio y fin."
+        Exit Function
+    End If
+    If fin = inicio Then
+        mensaje = "La hora de fin del tramo debe ser posterior a la de inicio."
+        Exit Function
+    End If
+    If fin < inicio Then fin = DateAdd("d", 1, fin)
+
+    If reporte.fecha_hora_inicio > 0 And reporte.fecha_hora_fin > 0 Then
+        If inicio < reporte.fecha_hora_inicio Or fin > reporte.fecha_hora_fin Then
+            mensaje = "El tramo cae fuera del horario del reporte."
+            Exit Function
+        End If
+    End If
+
+    Set tramos = ListarTramos(idTurnoLote)
+    For Each item In tramos
+        If IsObject(item) Then
+            If TypeName(item) = "Dictionary" Then
+                tIni = item("fecha_hora_inicio")
+                tFin = item("fecha_hora_fin")
+                If tIni > 0 And tFin > 0 Then
+                    If fin > tIni And inicio < tFin Then
+                        mensaje = "El tramo se superpone con otro tramo sin envase del reporte."
+                        Exit Function
+                    End If
+                End If
+            End If
+        End If
+    Next item
+
+    Set lo = Utils.Tabla("tblTramosSinEnvase")
+    If lo Is Nothing Then
+        mensaje = "No existe la tabla tblTramosSinEnvase."
+        Exit Function
+    End If
+
+    Set fila = lo.ListRows.Add
+    SetValor lo, fila, "id_turno_lote", idTurnoLote
+    SetValor lo, fila, "fecha_hora_inicio", inicio
+    SetValor lo, fila, "fecha_hora_fin", fin
+    CrearTramo = True
+End Function
+
+Public Function GuardarReporteCompleto(ByRef datos As TDatosReporte, _
+        ByRef produccion As TDatosProduccion, _
+        ByRef rechazos As Collection, _
+        ByRef paradas As Collection, _
+        Optional ByRef mensaje As String = "") As Boolean
+
+    Dim idTurnoLote As String
+    Dim idParada As String
+    Dim reporteCreado As Boolean
+    Dim produccionGuardada As Boolean
+    Dim paradasGuardadas As Collection
+    Dim rechazosGuardados As Collection
+    Dim item As Variant
+    Dim seccion As String
+    Dim motivo As String
+    Dim detalle As String
+    Dim cantidad As Variant
+    Dim iniP As Date
+    Dim finP As Date
+    Dim origen As String
+    Dim tipo As String
+    Dim interpretada As String
+    Dim observaciones As String
+    Dim i As Long
+    Dim arrRechazo As Variant
+
+    mensaje = ""
+    idTurnoLote = ""
+    idParada = ""
+    Set paradasGuardadas = New Collection
+    Set rechazosGuardados = New Collection
+
+    On Error GoTo Rollback
+
+    If Not CrearReporte(datos.fecha, datos.turno_codigo, datos.id_lote, _
+            datos.fecha_hora_inicio, datos.fecha_hora_fin, idTurnoLote, _
+            nroReporte:=datos.nro_reporte, equipo:=datos.equipo, _
+            encargado:=datos.encargado, controlCalidad:=datos.control_calidad, _
+            nroRegistroSopladora:=datos.nro_registro_sopladora, _
+            notasSinHorario:=datos.notas_sin_horario, observaciones:=datos.observaciones, _
+            velocidadInformada:=datos.velocidad_informada, mensaje:=mensaje) Then
+        GoTo Rollback
+    End If
+    reporteCreado = True
+
+    If HayProduccion(produccion) Then
+        If Not CrearProduccion(idTurnoLote, produccion.unidades_producidas, _
+                produccion.pallets, produccion.velocidad_nominal, mensaje) Then
+            GoTo Rollback
+        End If
+        produccionGuardada = True
+    End If
+
+    If Not (rechazos Is Nothing) Then
+        For Each item In rechazos
+            seccion = ItemTexto(item, "seccion")
+            motivo = ItemTexto(item, "motivo")
+            detalle = ItemTexto(item, "detalle")
+            cantidad = ItemValor(item, "cantidad")
+            If Not CrearRechazo(idTurnoLote, seccion, motivo, cantidad, detalle, mensaje) Then
+                GoTo Rollback
+            End If
+            rechazosGuardados.Add Array(seccion, motivo)
+        Next item
+    End If
+
+    If Not (paradas Is Nothing) Then
+        For Each item In paradas
+            iniP = ItemFecha(item, "fecha_hora_inicio")
+            finP = ItemFecha(item, "fecha_hora_fin")
+            origen = ItemTexto(item, "origen")
+            motivo = ItemTexto(item, "motivo")
+            tipo = ItemTexto(item, "tipo")
+            interpretada = ItemTexto(item, "interpretada")
+            observaciones = ItemTexto(item, "observaciones")
+            idParada = ""
+            If Not CrearParada(idTurnoLote, iniP, finP, origen, motivo, tipo, _
+                    idParada, observaciones, interpretada, mensaje) Then
+                GoTo Rollback
+            End If
+            If Len(idParada) > 0 Then paradasGuardadas.Add idParada
+        Next item
+    End If
+
+    On Error GoTo 0
+    GuardarReporteCompleto = True
+    Exit Function
+
+Rollback:
+    On Error Resume Next
+    For i = paradasGuardadas.Count To 1 Step -1
+        BorrarParada CStr(paradasGuardadas(i))
+    Next i
+    If produccionGuardada Then BorrarProduccion idTurnoLote
+    For i = rechazosGuardados.Count To 1 Step -1
+        arrRechazo = rechazosGuardados(i)
+        BorrarRechazo idTurnoLote, CStr(arrRechazo(0)), CStr(arrRechazo(1))
+    Next i
+    If reporteCreado Then BorrarReporteFisico idTurnoLote
+    On Error GoTo 0
+
+    If Len(mensaje) = 0 Then
+        mensaje = "No se pudo guardar el reporte completo."
+    Else
+        mensaje = "No se pudo guardar el reporte completo: " & mensaje
+    End If
+    GuardarReporteCompleto = False
+End Function
+
+Private Function HayProduccion(ByRef p As TDatosProduccion) As Boolean
+    HayProduccion = (p.unidades_producidas <> 0) Or (p.pallets <> 0) _
+                    Or (Len(Trim$(p.producto)) > 0)
+End Function
+
+Private Function ItemValor(ByVal item As Variant, ByVal clave As String) As Variant
+    If IsObject(item) Then
+        If TypeName(item) = "Dictionary" Then
+            If item.Exists(clave) Then ItemValor = item(clave)
+        End If
+    End If
+End Function
+
+Private Function ItemTexto(ByVal item As Variant, ByVal clave As String) As String
+    Dim v As Variant
+
+    v = ItemValor(item, clave)
+    If IsEmpty(v) Or IsNull(v) Then Exit Function
+    If IsError(v) Then Exit Function
+    ItemTexto = CStr(v)
+End Function
+
+Private Function ItemFecha(ByVal item As Variant, ByVal clave As String) As Date
+    Dim v As Variant
+
+    v = ItemValor(item, clave)
+    If IsDate(v) Then ItemFecha = CDate(v)
+End Function
+
+Private Sub BorrarReporteFisico(ByVal idTurnoLote As String)
+    Dim lo As ListObject
+    Dim fila As ListRow
+
+    If Len(Trim$(idTurnoLote)) = 0 Then Exit Sub
+
+    Set lo = Utils.Tabla("tblTurnosRegistro")
+    If lo Is Nothing Then Exit Sub
+
+    Set fila = BuscarFila(lo, "id_turno_lote", idTurnoLote)
+    If Not fila Is Nothing Then fila.Delete
+End Sub
 
 Private Function GuardarProduccion(ByVal idTurnoLote As String, ByVal unidades As Variant, _
         ByVal pallets As Variant, ByVal velocidadNominal As Variant, _
@@ -987,20 +1545,50 @@ Private Function OtrasParadasTurno(ByVal idTurno As String, ByVal idExcluir As S
         ByRef suma As Double) As Variant
 
     Dim lo As ListObject
+    Dim loTurnos As ListObject
     Dim rng As Range
+    Dim rngTurnos As Range
     Dim cTurno As Long
     Dim cId As Long
     Dim cIni As Long
     Dim cFin As Long
+    Dim cSegParada As Long
+    Dim cIdTurno As Long
+    Dim cSegTurno As Long
+    Dim cAnulado As Long
     Dim i As Long
     Dim sTurno As String
     Dim sId As String
+    Dim sSeg As String
     Dim dIni As Date
     Dim dFin As Date
     Dim arr() As Variant
-    Dim total As Long
+    Dim anulados As Object
 
     suma = 0
+
+    Set anulados = CreateObject("Scripting.Dictionary")
+    anulados.CompareMode = 1
+
+    Set loTurnos = Utils.Tabla("tblTurnosRegistro")
+    If Not loTurnos Is Nothing Then
+        cIdTurno = Utils.IndiceColumna(loTurnos, "id_turno")
+        cSegTurno = Utils.IndiceColumna(loTurnos, "id_turno_lote")
+        cAnulado = Utils.IndiceColumna(loTurnos, "anulado")
+        Set rngTurnos = loTurnos.DataBodyRange
+        If cIdTurno > 0 And cSegTurno > 0 And cAnulado > 0 Then
+            If Not rngTurnos Is Nothing Then
+                For i = 1 To rngTurnos.Rows.Count
+                    If StrComp(ValorTexto(rngTurnos.Cells(i, 1), cIdTurno), idTurno, vbTextCompare) = 0 Then
+                        If Utils.EsAnulado(rngTurnos.Cells(i, cAnulado).Value) Then
+                            sSeg = ValorTexto(rngTurnos.Cells(i, 1), cSegTurno)
+                            If Len(sSeg) > 0 Then anulados(sSeg) = True
+                        End If
+                    End If
+                Next i
+            End If
+        End If
+    End If
 
     Set lo = Utils.Tabla("tblParadas")
     If lo Is Nothing Then Exit Function
@@ -1009,28 +1597,32 @@ Private Function OtrasParadasTurno(ByVal idTurno As String, ByVal idExcluir As S
     cId = Utils.IndiceColumna(lo, "id")
     cIni = Utils.IndiceColumna(lo, "fecha_hora_inicio")
     cFin = Utils.IndiceColumna(lo, "fecha_hora_fin")
+    cSegParada = Utils.IndiceColumna(lo, "id_turno_lote")
     If cTurno = 0 Or cIni = 0 Or cFin = 0 Then Exit Function
 
     Set rng = lo.DataBodyRange
     If rng Is Nothing Then Exit Function
 
     ReDim arr(1 To rng.Rows.Count, 1 To 3)
-    total = rng.Rows.Count
 
     For i = 1 To rng.Rows.Count
         sTurno = ValorTexto(rng.Cells(i, 1), cTurno)
         If StrComp(sTurno, idTurno, vbTextCompare) = 0 Then
-            sId = ""
-            If cId > 0 Then sId = ValorTexto(rng.Cells(i, 1), cId)
-            If Len(idExcluir) = 0 Or StrComp(sId, idExcluir, vbTextCompare) <> 0 Then
-                dIni = ValorFecha(rng.Cells(i, 1), cIni)
-                dFin = ValorFecha(rng.Cells(i, 1), cFin)
-                If dIni > 0 And dFin > 0 Then
-                    If dFin < dIni Then dFin = DateAdd("d", 1, dFin)
-                    arr(i, 1) = dIni
-                    arr(i, 2) = dFin
-                    arr(i, 3) = sId
-                    suma = suma + DateDiff("n", dIni, dFin)
+            sSeg = ""
+            If cSegParada > 0 Then sSeg = ValorTexto(rng.Cells(i, 1), cSegParada)
+            If Not anulados.Exists(sSeg) Then
+                sId = ""
+                If cId > 0 Then sId = ValorTexto(rng.Cells(i, 1), cId)
+                If Len(idExcluir) = 0 Or StrComp(sId, idExcluir, vbTextCompare) <> 0 Then
+                    dIni = ValorFecha(rng.Cells(i, 1), cIni)
+                    dFin = ValorFecha(rng.Cells(i, 1), cFin)
+                    If dIni > 0 And dFin > 0 Then
+                        If dFin < dIni Then dFin = DateAdd("d", 1, dFin)
+                        arr(i, 1) = dIni
+                        arr(i, 2) = dFin
+                        arr(i, 3) = sId
+                        suma = suma + DateDiff("n", dIni, dFin)
+                    End If
                 End If
             End If
         End If
