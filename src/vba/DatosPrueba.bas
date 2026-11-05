@@ -4,10 +4,18 @@ Option Explicit
 ' Datos de los cinco casos oficiales de la Doc v0.8 (seccion 7).
 ' Se cargan con IDs que empiezan con TST- para poder borrarlos sin tocar
 ' los datos reales del libro.
+'
+' Aislamiento (Fase 4): PrepararDatosPrueba corre sobre el libro maestro y
+' borra/recrea solo filas TST-. La limpieza usa On Error Resume Next para
+' garantizar que los datos TST-* se borren aunque un test falle a mitad
+' de camino y deje la ejecucion en un estado inconsistente.
 
 Private Const PREFIJO As String = "TST-"
 
 Public Sub PrepararDatosPrueba()
+    ' La recreacion arranca desde un estado limpio; si falla, se avisa
+    ' pero no se aborta para que los tests siguientes intenten correr.
+    On Error Resume Next
     LimpiarDatosPrueba
     PrepararVelocidades
     PrepararCaso498
@@ -16,9 +24,11 @@ Public Sub PrepararDatosPrueba()
     PrepararCaso4
     PrepararCaso5
     PrepararCasoRN15
+    On Error GoTo 0
 End Sub
 
 Public Sub LimpiarDatosPrueba()
+    On Error Resume Next
     BorrarPorPrefijo "tblLotes", "id_lote", PREFIJO
     BorrarPorPrefijo "tblTurnosRegistro", "id_turno", PREFIJO
     BorrarPorPrefijo "tblParadas", "id", PREFIJO
@@ -30,6 +40,7 @@ Public Sub LimpiarDatosPrueba()
     BorrarPorPrefijo "tblPerdidasInsumo", "turno", PREFIJO
     BorrarPorPrefijo "tblPersonalTurno", "turno", PREFIJO
     BorrarPorPrefijo "tblParametros", "id", PREFIJO
+    On Error GoTo 0
 End Sub
 
 Private Sub PrepararVelocidades()
@@ -342,6 +353,10 @@ Private Sub BorrarPorPrefijo(ByVal nombreTabla As String, ByVal columna As Strin
     Dim c As Long
     Dim i As Long
     Dim v As Variant
+
+    ' On Error Resume Next: una fila con dato inesperado no debe frenar la
+    ' limpieza global de datos TST-*.
+    On Error Resume Next
 
     Set lo = Utils.Tabla(nombreTabla)
     If lo Is Nothing Then Exit Sub

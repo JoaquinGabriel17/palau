@@ -3,9 +3,10 @@
 """Verifica la compatibilidad de columnas entre el libro .xlsm y el VBA.
 
 Abre `libro/oee_master.xlsm` (o el libro legado v0.2 si el maestro no
-existe) con openpyxl y comprueba que las columnas de `tblVelocidades` y
-`tblTurnosRegistro` coincidan exactamente (orden incluido) con las que
-espera el VBA segun `docs/estructura-datos.md`.
+existe) con openpyxl y comprueba que las columnas de `tblVelocidades`,
+`tblTurnosRegistro`, `tblParadas` y `tblTramosSinEnvase` coincidan
+exactamente (orden incluido) con las que espera el VBA segun
+`docs/estructura-datos.md`.
 
 Uso:
     python tools/test_compatibilidad.py [ruta/al/libro.xlsm]
@@ -60,6 +61,30 @@ COLUMNAS_ESPERADAS = {
         "control_calidad",
         "nro_registro_sopladora",
         "registros_bolsones",
+    ],
+    # Seccion 2.14 del Doc (la migracion F2.1 agrega `interpretada`).
+    "tblParadas": [
+        "id",
+        "fecha",
+        "turno",
+        "linea_id",
+        "id_lote",
+        "id_turno_lote",
+        "fecha_hora_inicio",
+        "fecha_hora_fin",
+        "duracion_min",
+        "origen",
+        "motivo",
+        "tipo",
+        "codigo",
+        "interpretada",
+        "observaciones",
+    ],
+    # Seccion 2.20 del Doc.
+    "tblTramosSinEnvase": [
+        "id_turno_lote",
+        "fecha_hora_inicio",
+        "fecha_hora_fin",
     ],
 }
 

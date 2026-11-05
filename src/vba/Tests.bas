@@ -82,6 +82,12 @@ Public Function RunAllTests() As Boolean
     ok = Test_ParadaCruzadaTurno() And ok
     ok = Test_AccesoHojas() And ok
 
+    ' Fase 4: pruebas rigurosas y aislamiento.
+    ok = Test_CruceMedianocheValidacion() And ok
+    ok = Test_TipoInactivoValidacion() And ok
+    ok = Test_ParadaEnReporteAnulado() And ok
+    ok = Test_Rollback() And ok
+
     LimpiarDatosPrueba
 
     Debug.Print "Resultados registrados: " & mCantidad
@@ -704,6 +710,192 @@ Public Function Test_AccesoHojas() As Boolean
 
     LimpiarReportePruebaF23
     Test_AccesoHojas = ok
+End Function
+
+' ------------------------------------------------------------------
+' Fase 4: pruebas rigurosas y aislamiento.
+' ------------------------------------------------------------------
+
+Public Function Test_CruceMedianocheValidacion() As Boolean
+    Dim f As Date
+    Dim finTurno As Date
+    Dim res As TResultadoValidacion
+    Dim ok As Boolean
+
+    ' Turno de 22:00 a 00:00 (termina a medianoche, no extiende el dia).
+    f = DateSerial(2026, 11, 4)
+    finTurno = DateAdd("n", 1440, f)
+
+    res = ValidarParada(f + TimeSerial(23, 50, 0), DateAdd("n", 1450, f), _
+                        f + TimeSerial(22, 0, 0), finTurno, _
+                        tipo:="TP-03", motivo:="prueba")
+    ok = ValidarLogico("Fase 4 cruce medianoche", _
+                       "parada 23:50-00:10 con turno hasta 00:00 bloquea", _
+                       res.Resultado = ResultadoValidacion.BLOQUEA)
+
+    ' El mismo turno extendido hasta 00:30 admite la parada completa.
+    res = ValidarParada(f + TimeSerial(23, 50, 0), DateAdd("n", 1450, f), _
+                        f + TimeSerial(22, 0, 0), DateAdd("n", 1470, f), _
+                        tipo:="TP-03", motivo:="prueba")
+    ok = ValidarLogico("Fase 4 cruce medianoche", _
+                       "parada 23:50-00:10 pasa si el turno termina a 00:30", _
+                       res.Resultado = ResultadoValidacion.OK) And ok
+
+    Test_CruceMedianocheValidacion = ok
+End Function
+
+Public Function Test_TipoInactivoValidacion() As Boolean
+    Dim f As Date
+    Dim res As TResultadoValidacion
+    Dim ok As Boolean
+
+    f = DateSerial(2026, 11, 4)
+
+    res = ValidarParada(f + TimeSerial(9, 0, 0), f + TimeSerial(9, 30, 0), _
+                        f + TimeSerial(6, 0, 0), f + TimeSerial(14, 0, 0), _
+                        tipo:="TP-02", motivo:="prueba")
+    ok = ValidarLogico("Fase 4 tipo parada", "TP-02 cabecera bloquea", _
+                       res.Resultado = ResultadoValidacion.BLOQUEA)
+
+    res = ValidarParada(f + TimeSerial(10, 0, 0), f + TimeSerial(10, 30, 0), _
+                        f + TimeSerial(6, 0, 0), f + TimeSerial(14, 0, 0), _
+                        tipo:="TP-03", motivo:="prueba", tipoActivo:=False)
+    ok = ValidarLogico("Fase 4 tipo parada", "tipo inactivo bloquea", _
+                       res.Resultado = ResultadoValidacion.BLOQUEA) And ok
+
+    res = ValidarParada(f + TimeSerial(11, 0, 0), f + TimeSerial(11, 30, 0), _
+                        f + TimeSerial(6, 0, 0), f + TimeSerial(14, 0, 0), _
+                        tipo:="TP-03", motivo:="prueba", tipoActivo:=True)
+    ok = ValidarLogico("Fase 4 tipo parada", "tipo activo pasa", _
+                       res.Resultado = ResultadoValidacion.OK) And ok
+
+    Test_TipoInactivoValidacion = ok
+End Function
+
+Public Function Test_ParadaEnReporteAnulado() As Boolean
+    Dim f As Date
+    Dim ok As Boolean
+    Dim idTurnoLote As String
+    Dim idParada As String
+    Dim mensaje As String
+
+    f = DateSerial(2026, 11, 4)
+    LimpiarReportePrueba "TST-RPT-ANULP", "TST-ANULP-L"
+
+    AgregarLoteTest "TST-ANULP-L", "11281", "500SG", _
+                    f + TimeSerial(6, 0, 0), f + TimeSerial(14, 0, 0)
+
+    ok = ValidarLogico("Fase 4 parada anulada", "crear reporte", _
+        CrearReporte(f, "RES-M", "TST-ANULP-L", f + TimeSerial(6, 0, 0), f + TimeSerial(14, 0, 0), _
+                     idTurnoLote, nroReporte:="TST-RPT-ANULP", equipo:="RES", _
+                     encargado:="prueba", mensaje:=mensaje))
+
+    ok = ValidarLogico("Fase 4 parada anulada", "parada en reporte activo", _
+        CrearParada(idTurnoLote, f + TimeSerial(9, 0, 0), f + TimeSerial(9, 10, 0), _
+                    "OR-02", "prueba", "TP-03", idParada, mensaje:=mensaje)) And ok
+
+    ok = ValidarLogico("Fase 4 parada anulada", "anular reporte", _
+        AnularReporte(idTurnoLote, mensaje)) And ok
+
+    ok = ValidarLogico("Fase 4 parada anulada", "parada en reporte anulado bloquea", _
+        Not CrearParada(idTurnoLote, f + TimeSerial(10, 0, 0), f + TimeSerial(10, 10, 0), _
+                        "OR-02", "prueba", "TP-03", idParada, mensaje:=mensaje)) And ok
+
+    LimpiarReportePrueba "TST-RPT-ANULP", "TST-ANULP-L"
+    Test_ParadaEnReporteAnulado = ok
+End Function
+
+Public Function Test_Rollback() As Boolean
+    Dim f As Date
+    Dim ok As Boolean
+    Dim mensaje As String
+    Dim datosRep As TDatosReporte
+    Dim datosProd As TDatosProduccion
+    Dim paradas As Collection
+    Dim rechazos As Collection
+
+    f = DateSerial(2026, 11, 4)
+    LimpiarReportePrueba "TST-RPT-RB", "TST-RB-L"
+
+    AgregarLoteTest "TST-RB-L", "11291", "500SG", _
+                    f + TimeSerial(6, 0, 0), f + TimeSerial(14, 0, 0)
+
+    datosRep.fecha = f
+    datosRep.turno_codigo = "RES-M"
+    datosRep.id_lote = "TST-RB-L"
+    datosRep.nro_reporte = "TST-RPT-RB"
+    datosRep.equipo = "RES"
+    datosRep.encargado = "prueba"
+    datosRep.fecha_hora_inicio = f + TimeSerial(6, 0, 0)
+    datosRep.fecha_hora_fin = f + TimeSerial(14, 0, 0)
+
+    ' Primera parada valida, segunda con un dato de tipo invalido
+    ' (la fecha de inicio no es una fecha) para forzar el rollback.
+    Set paradas = New Collection
+    paradas.Add CrearItemParadaTest(f + TimeSerial(9, 0, 0), f + TimeSerial(9, 10, 0), _
+                                    "OR-02", "prueba", "TP-03")
+    paradas.Add CrearItemParadaTest("no-es-fecha", f + TimeSerial(10, 10, 0), _
+                                    "OR-02", "prueba", "TP-03")
+
+    Set rechazos = New Collection
+
+    ok = ValidarLogico("Fase 4 rollback", "GuardarReporteCompleto con dato invalido falla", _
+        Not GuardarReporteCompleto(datosRep, datosProd, rechazos, paradas, mensaje))
+
+    ok = ValidarLogico("Fase 4 rollback", "mensaje de rollback", _
+        Len(Trim$(mensaje)) > 0) And ok
+    ok = ValidarLogico("Fase 4 rollback", "cabecera no guardada", _
+        Not ExisteReportePorLoteTest("TST-RB-L")) And ok
+    ok = ValidarLogico("Fase 4 rollback", "paradas invalidas no guardadas", _
+        ContarFilasPorValorTest("tblParadas", "id_lote", "TST-RB-L") = 0) And ok
+
+    LimpiarReportePrueba "TST-RPT-RB", "TST-RB-L"
+    Test_Rollback = ok
+End Function
+
+Private Function CrearItemParadaTest(ByVal ini As Variant, ByVal fin As Variant, _
+        ByVal origen As String, ByVal motivo As String, ByVal tipo As String) As Object
+    Dim d As Object
+
+    Set d = CreateObject("Scripting.Dictionary")
+    d.CompareMode = 1
+    d("fecha_hora_inicio") = ini
+    d("fecha_hora_fin") = fin
+    d("origen") = origen
+    d("motivo") = motivo
+    d("tipo") = tipo
+    d("interpretada") = "No"
+    d("observaciones") = ""
+    Set CrearItemParadaTest = d
+End Function
+
+Private Function ExisteReportePorLoteTest(ByVal idLote As String) As Boolean
+    ExisteReportePorLoteTest = ContarFilasPorValorTest("tblTurnosRegistro", _
+                                                       "id_lote", idLote) > 0
+End Function
+
+Private Function ContarFilasPorValorTest(ByVal nombreTabla As String, _
+                                         ByVal columna As String, _
+                                         ByVal valor As String) As Long
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim c As Long
+    Dim i As Long
+
+    Set lo = Utils.Tabla(nombreTabla)
+    If lo Is Nothing Then Exit Function
+
+    c = Utils.IndiceColumna(lo, columna)
+    If c = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        If StrComp(Trim$(CStr(rng.Cells(i, c).Value)), valor, vbTextCompare) = 0 Then
+            ContarFilasPorValorTest = ContarFilasPorValorTest + 1
+        End If
+    Next i
 End Function
 
 Private Sub AgregarLoteTest(ByVal idLote As String, ByVal numeroLote As String, _

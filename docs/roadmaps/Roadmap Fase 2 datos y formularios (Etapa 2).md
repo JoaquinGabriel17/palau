@@ -174,6 +174,8 @@ Reglas de referencia: Doc v0.8 (2026-11-04).
 
 **Nota:** 78 casos PASA, incluyendo validación cruzada de turnos e integración de anulación. Con los dos tests nuevos, la suite completa queda en 87 casos PASA.
 
+**Nota Fase 4 (2026-11-05):** ejecutada la Fase 4 (pruebas rigurosas y aislamiento) sobre `oee_v0.2_2026-11-04.xlsm`. El libro quedó sincronizado con `src/vba` (9 módulos reimportados, incluyendo `Utils.bas`) y la migración de `interpretada` en `tblParadas` validada con `tools/test_compatibilidad.py`. La suite completa (macro `Tests.EjecutarPruebas`) da **100 casos PASA / 0 FALLA**: se agregaron `Test_CruceMedianocheValidacion`, `Test_TipoInactivoValidacion`, `Test_ParadaEnReporteAnulado` y `Test_Rollback` (+13 casos sobre los 87 previos). La limpieza de datos de prueba usa `On Error Resume Next` en `DatosPrueba.LimpiarDatosPrueba` para garantizar el aislamiento aunque un test falle; verificado que no quedan residuos `TST-*` en el libro. Herramientas nuevas: `tools/sincronizar_libro.py` y `tools/ejecutar_tests.py`.
+
 **Depende de:** F2.1.
 
 ### F2.4 Formularios núcleo (2A)
