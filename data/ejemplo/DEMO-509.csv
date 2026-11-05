@@ -1,0 +1,8 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-509,06/11/2026,SOP-06,SOP,,11009,500CG,06/11/2026 06:00,06/11/2026 12:00,,,DATO DE DEMO - turno SOP con 500 con gas,,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,06/11/2026 08:10,06/11/2026 08:30,OR-01,averia sopladora,TP-03,,,,,,,,
+PARADA,,,,,,,,,,,,,,06/11/2026 09:00,06/11/2026 09:02,OR-03,micro,TP-05,,,,,,,,
+PARADA,,,,,,,,,,,,,,06/11/2026 10:00,06/11/2026 10:35,OR-08,descanso,TP-01,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,19500,12,
+RECHAZO,,,,,,,,,,,,,,,,,,,,SE-02,MR-01,50,,,,
+REDUCCION,,,,,,,,,,,,,,06/11/2026 07:00,06/11/2026 07:15,OR-13,falta de personal,,,,,,,,,55

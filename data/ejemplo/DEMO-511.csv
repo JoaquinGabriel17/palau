@@ -1,0 +1,6 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-511,06/11/2026,RES-T,RES,,11011,500SG,06/11/2026 14:00,06/11/2026 22:00,Si,,DATO DE DEMO - reporte anulado de prueba,,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,06/11/2026 15:00,06/11/2026 15:20,OR-01,averia sopladora,TP-03,,,,,,,,
+PARADA,,,,,,,,,,,,,,06/11/2026 18:55,06/11/2026 19:30,OR-08,descanso,TP-01,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,6000,3,
+RECHAZO,,,,,,,,,,,,,,,,,,,,SE-02,MR-01,10,,,,

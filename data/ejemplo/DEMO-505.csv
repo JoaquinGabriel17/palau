@@ -1,0 +1,7 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-505,12/11/2026,RES-T,RES,,11005,2000SG,12/11/2026 14:00,12/11/2026 22:00,,pequenas paradas por falta de temperatura,DATO DE DEMO - caso 7.4 datos incompletos,,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,12/11/2026 15:10,12/11/2026 15:30,OR-04,averia forradora,TP-03,,,,,,,,
+PARADA,,,,,,,,,,,,,,12/11/2026 16:20,12/11/2026 16:50,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,12/11/2026 18:55,12/11/2026 19:30,OR-08,descanso,TP-01,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,22080,46,
+RECHAZO,,,,,,,,,,,,,,,,,,,,,,8,,,,

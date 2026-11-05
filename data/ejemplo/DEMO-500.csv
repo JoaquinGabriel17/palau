@@ -1,0 +1,2 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-500,11/11/2026,RES-M,RES,,11012,500SG,11/11/2026 06:00,11/11/2026 14:00,,,DATO DE DEMO - caso 7.4 turno sin produccion,,,,,,,,,,,,,,

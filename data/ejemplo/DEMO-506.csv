@@ -1,0 +1,10 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-506,13/11/2026,RES-M,RES,,11006,500SG,13/11/2026 06:00,13/11/2026 14:00,,,DATO DE DEMO - caso 7.4 tramos con y sin envase,,,,,,,,,,,,,,
+TRAMO,,,,,,,,,,,,,,13/11/2026 10:00,13/11/2026 14:00,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,13/11/2026 07:00,13/11/2026 07:20,OR-02,averia llenadora,TP-03,,,,,,,,
+PARADA,,,,,,,,,,,,,,13/11/2026 08:00,13/11/2026 08:03,OR-01,micro,TP-05,,,,,,,,
+PARADA,,,,,,,,,,,,,,13/11/2026 11:00,13/11/2026 11:10,OR-03,ajuste etiquetadora,TP-04,,,,,,,,
+PARADA,,,,,,,,,,,,,,13/11/2026 11:55,13/11/2026 12:30,OR-08,descanso,TP-01,,,,,,,,
+PARADA,,,,,,,,,,,,,,13/11/2026 12:45,13/11/2026 12:47,OR-01,micro,TP-05,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,22800,12,
+RECHAZO,,,,,,,,,,,,,,,,,,,,,,60,,,,

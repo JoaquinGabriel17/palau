@@ -1,0 +1,8 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-508,04/11/2026,SOP-12,SOP,,11008,BID6,04/11/2026 12:00,04/11/2026 18:00,,,DATO DE DEMO - turno SOP con bidon 6 litros,,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,04/11/2026 13:00,04/11/2026 13:40,OR-02,averia llenadora,TP-03,,,,,,,,
+PARADA,,,,,,,,,,,,,,04/11/2026 14:30,04/11/2026 14:34,OR-01,micro,TP-05,,,,,,,,
+PARADA,,,,,,,,,,,,,,04/11/2026 16:00,04/11/2026 16:35,OR-08,descanso,TP-01,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,1690,10,
+RECHAZO,,,,,,,,,,,,,,,,,,,,SE-02,MR-01,10,,,,
+REDUCCION,,,,,,,,,,,,,,04/11/2026 15:00,04/11/2026 15:20,OR-06,presion de aire baja,,,,,,,,,8

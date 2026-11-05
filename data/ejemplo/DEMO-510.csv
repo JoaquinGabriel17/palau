@@ -1,0 +1,8 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-510,08/11/2026,SOP-18,SOP,,11010,500SG,08/11/2026 18:00,09/11/2026 00:00,,,DATO DE DEMO - domingo noche cambio de semana,,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,08/11/2026 20:00,08/11/2026 20:15,OR-03,averia etiquetadora,TP-03,,,,,,,,
+PARADA,,,,,,,,,,,,,,08/11/2026 21:00,08/11/2026 21:02,OR-01,micro,TP-05,,,,,,,,
+PARADA,,,,,,,,,,,,,,08/11/2026 22:00,08/11/2026 22:35,OR-08,descanso,TP-01,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,15000,8,
+RECHAZO,,,,,,,,,,,,,,,,,,,,SE-01,MR-05,30,,,,
+REDUCCION,,,,,,,,,,,,,,08/11/2026 21:30,08/11/2026 22:00,OR-13,espera de envase,,,,,,,,,70

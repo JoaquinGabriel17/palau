@@ -1,0 +1,13 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,DEMO-503,09/11/2026,RES-N,RES,,11003,1500SG,09/11/2026 22:00,10/11/2026 00:00,,,DATO DE DEMO - caso 7.4 cruce de medianoche lote A,,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,09/11/2026 23:00,09/11/2026 23:02,OR-01,micro,TP-05,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,4200,0,
+RECHAZO,,,,,,,,,,,,,,,,,,,,SE-02,MR-01,6,,,,
+REPORTE,DEMO-504,09/11/2026,RES-N,RES,,11004,1500SG,10/11/2026 00:00,10/11/2026 06:00,,,DATO DE DEMO - caso 7.4 cruce de medianoche lote B,,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,09/11/2026 23:40,10/11/2026 00:25,OR-02,averia llenadora,TP-03,,,,,,,,
+PARADA,,,,,,,,,,,,,,10/11/2026 01:00,10/11/2026 01:04,OR-01,micro,TP-05,,,,,,,,
+PARADA,,,,,,,,,,,,,,10/11/2026 01:15,10/11/2026 01:50,OR-07,falta de agua,TP-07,,,,,,,,
+PARADA,,,,,,,,,,,,,,10/11/2026 02:55,10/11/2026 03:30,OR-08,descanso,TP-01,,,,,,,,
+PARADA,,,,,,,,,,,,,,10/11/2026 04:10,10/11/2026 04:22,OR-03,ajuste etiquetadora,TP-04,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,17400,0,
+RECHAZO,,,,,,,,,,,,,,,,,,,,SE-03,MR-03,24,,,,

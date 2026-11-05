@@ -1,0 +1,12 @@
+seccion,nro_reporte,fecha_reporte,turno,equipo,encargado,lote,producto,horario_inicio,horario_fin,anulado,notas_sin_horario,observaciones,velocidad_informada,inicio,fin,origen,motivo,tipo_parada,interpretada,rechazo_seccion,rechazo_motivo,cantidad,detalle,unidades,pallets,velocidad
+REPORTE,498,28/09/2026,RES-T,RES,,09261,1500SG,28/09/2026 14:00,28/09/2026 22:00,,pequenas paradas por falta de temperatura y problemas en el loose de pack,,70,,,,,,,,,,,,,
+PARADA,,,,,,,,,,,,,,28/09/2026 14:10,28/09/2026 14:50,OR-05,temperatura alta,TP-07,,,,,,,,
+PARADA,,,,,,,,,,,,,,28/09/2026 15:40,28/09/2026 15:55,OR-03,limpieza,TP-04,,,,,,,,
+PARADA,,,,,,,,,,,,,,28/09/2026 16:50,28/09/2026 17:00,OR-03,cambio de rollo y limpieza,TP-04,,,,,,,,
+PARADA,,,,,,,,,,,,,,28/09/2026 18:20,28/09/2026 18:30,OR-03,limpieza,TP-04,,,,,,,,
+PARADA,,,,,,,,,,,,,,28/09/2026 18:55,28/09/2026 19:30,OR-08,descanso,TP-01,,,,,,,,
+PARADA,,,,,,,,,,,,,,28/09/2026 21:00,28/09/2026 21:10,OR-06,se espera 10 minutos,TP-04,Si,,,,,,,
+PARADA,,,,,,,,,,,,,,28/09/2026 21:30,28/09/2026 22:00,OR-01,falla en horno,TP-03,,,,,,,,
+PRODUCCION,,,,,,,,,,,,,,,,,,,,,,,,17400,29,
+RECHAZO,,,,,,,,,,,,,,,,,,,,,,4,,,,
+REDUCCION,,,,,,,,,,,,,,28/09/2026 20:40,28/09/2026 21:10,OR-13,falla de compresor,,,,,,,,,45

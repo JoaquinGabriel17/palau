@@ -200,6 +200,31 @@ Public Function LeerReporte(ByVal idTurnoLote As String) As TDatosReporte
     LeerReporte = d
 End Function
 
+Public Function LeerReportePorNro(ByVal nroReporte As String) As TDatosReporte
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cNro As Long
+    Dim cId As Long
+    Dim i As Long
+
+    Set lo = Utils.Tabla("tblTurnosRegistro")
+    If lo Is Nothing Then Exit Function
+
+    cNro = Utils.IndiceColumna(lo, "nro_reporte")
+    cId = Utils.IndiceColumna(lo, "id_turno_lote")
+    If cNro = 0 Or cId = 0 Then Exit Function
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Function
+
+    For i = 1 To rng.Rows.Count
+        If StrComp(ValorTexto(rng.Cells(i, 1), cNro), nroReporte, vbTextCompare) = 0 Then
+            LeerReportePorNro = LeerReporte(ValorTexto(rng.Cells(i, 1), cId))
+            Exit Function
+        End If
+    Next i
+End Function
+
 Public Function ActualizarReporte(ByRef datos As TDatosReporte, _
         Optional ByRef mensaje As String = "") As Boolean
 
@@ -1158,13 +1183,27 @@ Public Function BuscarOCrearLote(ByVal numeroLote As String, ByVal producto As S
     idNuevo = SiguienteId(lo, "id_lote", "L", fecha)
     Set fila = lo.ListRows.Add
     SetValor lo, fila, "id_lote", idNuevo
-    SetValor lo, fila, "numero_lote", numeroLote
+    ' numero_lote como texto para conservar los ceros a la izquierda (ej. 09261).
+    EscribirTexto lo, fila, "numero_lote", numeroLote
     SetValor lo, fila, "producto", producto
     SetValor lo, fila, "fecha_hora_inicio", fecha
     SetValor lo, fila, "fecha_hora_fin", Empty
 
     BuscarOCrearLote = idNuevo
 End Function
+
+Private Sub EscribirTexto(ByVal lo As ListObject, ByVal fila As ListRow, _
+        ByVal columna As String, ByVal valor As String)
+
+    Dim c As Long
+
+    c = Utils.IndiceColumna(lo, columna)
+    If c = 0 Then Exit Sub
+    With fila.Range.Cells(1, c)
+        .NumberFormat = "@"
+        .Value = valor
+    End With
+End Sub
 
 Public Function ListarTramos(ByVal idTurnoLote As String) As Collection
     Dim lo As ListObject
