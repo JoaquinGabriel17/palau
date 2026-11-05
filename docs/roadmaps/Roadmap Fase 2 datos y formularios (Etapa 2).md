@@ -2,7 +2,7 @@
 
 Proyecto OEE Excel/VBA · Autor: Joaquín · Versión 1.0 · 2026-11-01
 
-Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formalizan en el Doc v0.6 (F2.0).
+Reglas de referencia: Doc v0.8 (2026-11-04).
 
 ## 1. Alcance y reglas de juego
 
@@ -16,11 +16,11 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 - **Etapa 1:** cerrada (tag etapa1). Quedan sin bloquear: la demo H3 al ingeniero y la agregación día/semana (T11).
 - **Tercera persona:** sigue fuera del plan hasta que se defina su rol.
 
-## 2. Decisiones cerradas (pasan al Doc v0.6)
+## 2. Decisiones cerradas (Doc v0.8)
 
 1. **Carga (secciones 2 y 4.9):** el supervisor llena el papel durante el turno; administración lo transcribe a Excel en una PC.
 2. **Un reporte = un segmento turno–lote (4.8):** si cambia el producto dentro del turno, se llena otro reporte. El segmento (id\_turno\_lote) es la unidad de carga.
-3. **Sopladora (ajusta Q-02 y 4.2):** hoy no existe reporte de SOP. El supervisor anota las paradas de sopladora en el reporte RES y afectan el OEE del turno RES cuando corresponde. **Pendiente** hasta que se confirme la creación del reporte de SOP.
+3. **Sopladora (Q-23, cerrada):** tiene registro propio por turno (no entra al cálculo del OEE). Sus paradas se siguen anotando en el reporte RES y afectan el OEE de ese turno cuando corresponde; el libro guarda su número para trazabilidad.
 4. **Velocidad nominal:** se usa la del catálogo (70/min en el 498; el papel no la informaba). El campo del papel, si se completa, se guarda como dato informativo.
 5. **Producción (4.6):** packs totales = pallets completos × packs por pallet + packs sueltos. No se cuentan pallets incompletos; sí los packs sueltos.
 6. **Paradas sin horario claro (4.9):** si no se entienden la hora de inicio y la de fin, no se cargan como parada. Quedan en una nota sin horario del reporte.
@@ -36,7 +36,8 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 
 - Una parada que cruza dos reportes del mismo turno se asigna al reporte donde empieza.
 - Las paradas se validan contra el turno completo y no solo contra el reporte, porque varios reportes pueden compartir turno.
-- Rechazo detectado tarde (Q-06, abierta): se carga en el reporte del turno donde se informa y se anota en observaciones.
+- Rechazo detectado tarde: se reparte equitativamente entre todos los turnos abarcados por el lote (Q-06 cerrada).
+- La sopladora tiene su propio registro de turno, pero sus paradas se siguen anotando en el reporte RES y el libro guarda su número para trazabilidad (Q-23 cerrada).
 - Un turno que no corresponde al día (por ejemplo, RES un domingo) avisa y no bloquea, por posibles horas extra.
 - Parada sin tipo: 5 min o menos = microparada (TP-05) automática; más de 5 min = TP-06 (sin clasificar) hasta que se clasifique (RN-09).
 - Nunca se borra un reporte: se anula y queda marcado.
@@ -69,10 +70,10 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 
 ## 5. Datos que se agregan o cambian
 
-- **Reporte (segmento):** nro\_reporte, encargado, estado\_revision, anulado, notas\_sin\_horario, observaciones, velocidad\_informada (informativa) y horas de inicio y fin del turno según el papel (informativas).
+- **Reporte (segmento):** nro\_reporte, encargado, estado\_revision, anulado, notas\_sin\_horario, observaciones, velocidad\_informada (informativa), `control_calidad`, `nro_registro_sopladora` y horas de inicio y fin del turno según el papel (definen el TD).
 - **Paradas:** códigos de origen, motivo y tipo (no texto), interpretada (sí/no) y observaciones.
 - **Producción:** pallets y packs sueltos por separado; unidades buenas y litros calculados y guardados (Doc 8.2).
-- **Rechazos:** sección y motivo opcionales; cantidad obligatoria.
+- **Rechazos:** sección y motivo opcionales; cantidad obligatoria; `detalle` opcional. Si el rechazo es tardío, se reparte equitativamente entre los turnos del lote (Q-06 cerrada).
 - **Tablas nuevas:** tblOrigenes, tblMotivos, tblSeccionesRechazo, tblMotivosRechazo, tblInsumos, tblPuestos, tblReducciones, tblPerdidasInsumo, tblPersonalTurno.
 - **Insumos (según el papel):** preformas, envases y tapas en unidades; etiquetas y termocontraíble en gramos; film stretch opcional.
 - **Puestos (según el papel):** Soplador / Ayudante, Llenador / Visor, Etiquetador, Forradora / Final de línea y Autoelevador.
@@ -108,6 +109,8 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 
 ### F2.1 Modelo de datos y catálogos
 
+**Estado:** COMPLETADO (2026-11-04).
+
 **Duración:** \~3 días (parcial) / 1-2 días (completo).
 
 **Objetivo:** libro v0.2 con toda la estructura y los catálogos cargados.
@@ -124,6 +127,8 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 **Entregable:** libro v0.2 con catálogos cargados.
 
 **Criterio de terminado:** CompletarEstructura corre dos veces sin romper nada, los tests están en verde y el 498 da los resultados de F2.0.
+
+**Nota:** Libro generado: `oee_v0.2_2026-11-04.xlsm`. Tests en verde con 32 casos PASA, incluyendo el nuevo test RN-15.
 
 **Depende de:** F2.0 (puede arrancar con los supuestos).
 
@@ -149,6 +154,8 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 
 ### F2.3 Validaciones y acceso a datos (con IA)
 
+**Estado:** COMPLETADO (2026-11-04).
+
 **Duración:** 4-5 días (parcial) / 2 días (completo).
 
 **Objetivo:** las reglas de la sección 4 como funciones puras, y escritura segura en las hojas.
@@ -164,6 +171,8 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 **Entregable:** módulos Validaciones y AccesoHojas con pruebas.
 
 **Criterio de terminado:** pasan todas las pruebas, incluidos los bordes (cruce de medianoche, solapamiento entre reportes del mismo turno, parada sin hora).
+
+**Nota:** 78 casos PASA, incluyendo validación cruzada de turnos e integración de anulación. Con los dos tests nuevos, la suite completa queda en 87 casos PASA.
 
 **Depende de:** F2.1.
 
@@ -254,44 +263,33 @@ Reglas de referencia: Doc v0.5 más las decisiones del 2026-11-01, que se formal
 ## 8. Hitos de aprobación del ingeniero
 
 - **H3 (pendiente, no bloquea):** demo de Etapa 1.
-- **H4:** Doc v0.6 y diseño de formularios (bocetos), con conformidad de administración.
+- **H4:** Doc v0.6 y diseño de formularios (bocetos), con conformidad de administración. **Pendiente de validación con administración (Q-29).**
 - **H5a:** demo de 2A con carga real.
 - **H5b:** papeles nuevos (reducciones y rechazos) y formularios 2B.
 
 Cada aprobación queda en el registro de cambios del Doc, con fecha.
 
-## 9. Preguntas para el ingeniero (lunes 2/11)
+## 9. Preguntas abiertas para el ingeniero
 
-**Prioridad alta**
+Solo quedan abiertas las preguntas que no bloquean el núcleo 2A. Para F2.2, Q-29 sigue siendo necesaria.
 
-1. **D-01:** las limpiezas de la etiquetadora del 498 (15, 10 y 10 min), ¿microparada (Q-18) o A y C? El OEE da 61,4% en ambos casos. Con Q-18: Disponibilidad 90,1% y Rendimiento 68,1%. Con D-01: 81,5% y 75,3%.
-2. **Papel:** ¿rediseñan el reporte (papel v2) o agregamos hojas complementarias (rechazos por sección y motivo, reducciones de velocidad)? ¿Quién imprime y reparte?
-3. **Reducciones de velocidad:** ¿cómo sabe el supervisor la velocidad real? Suponemos que la máquina indica la producción por minuto. ¿Se aprueba la estimación del tiempo equivalente perdido para el dashboard?
-4. **Horario real del turno:** ¿puede diferir del fijo (arranque tarde, turno extendido)? ¿Qué TD se usa en ese caso?
-5. **Sopladora:** confirmar la redacción: mientras no exista reporte de SOP, sus paradas van en el reporte RES y afectan el OEE de ese turno. ¿Hay fecha estimada para el reporte de SOP?
-6. **Lote a las 00:00:** si el lote cambia a medianoche sin cambiar el producto, ¿también se llena otro reporte?
+1. **Q-21:** ¿cómo sabe el supervisor la velocidad real y se aprueba la estimación del tiempo equivalente perdido para el dashboard? (No bloquea 2A; afecta a reducciones de velocidad en 2B.)
+2. **Q-27:** administración: ¿transcribe el mismo día o con atraso?, ¿quién corrige?, ¿se puede observar 30 minutos? (No bloquea 2A; afecta al diseño de F2.2.)
+3. **Q-29:** material: papel en blanco (el ingeniero tiene el formato en un Excel y lo va a pasar) y registro del soplador (foto). (Parcial; sin el papel en blanco no se pueden hacer los bocetos de F2.2.)
 
-**Prioridad media**
-
-7. **Q-03:** horario del descanso de SOP (mientras tanto se descuentan 35 min sin horario).
-8. **Insumos:** confirmar la lista del papel: preformas, envases y tapas en unidades; etiquetas y termocontraíble en gramos; film stretch opcional.
-9. **Control de Calidad y observaciones del papel:** ¿entran al libro? Propuesta: no por ahora.
-10. **Administración:** ¿transcribe el mismo día o con atraso? ¿Quién corrige si algo no se entiende? ¿Puedo observar 30 minutos cómo carga hoy?
-11. **Campo Velocidad nominal de la línea del papel:** si algún supervisor lo completa, ¿tiene efecto o es solo informativo? Propuesta: informativo.
-12. **Material:** papel en blanco y 5-10 reportes completos en foto.
-
-Siguen abiertas, sin bloquear la Fase 2: Q-06, Q-13, Q-14 y Q-15 (Fase 3).
+Las demás preguntas quedaron cerradas en el Doc v0.8 (Q-03, Q-06, Q-13, Q-14, Q-15, Q-19, Q-20, Q-22, Q-23, Q-24, Q-25, Q-26, Q-28, Q-30, Q-31 y Q-32).
 
 ## 10. Trabajo con la IA en esta fase
 
-- Prompt base actualizado a Doc v0.6 y con estas reglas extra: los UserForms solo llaman a Validaciones y AccesoHojas; prefijos frm, cbo, txt y btn; los desplegables aceptan valores nuevos; los parámetros se leen con ObtenerParametro.
+- Prompt base actualizado a Doc v0.8 y con estas reglas extra: los UserForms solo llaman a Validaciones y AccesoHojas; prefijos frm, cbo, txt y btn; los desplegables aceptan valores nuevos; los parámetros se leen con ObtenerParametro.
 - Cada pedido incluye casos de prueba con resultado esperado, y se pide explicar los casos borde.
 - Probar siempre antes de integrar y cruzar con una fórmula de hoja independiente.
 - Registrar cada pedido en docs/pedidos-ia/NNN-nombre.md.
+- **Cambio en los tests (Q-30):** el Caso 2 pasó de 78,8% a 73,5% porque el cambio de formato ahora es A y C y resta del tiempo operativo.
 
 ## 11. Riesgos y señales de alerta
 
-**Riesgos:** errores de transcripción desde el papel, carga con atraso, supervisores que no completan los campos nuevos, cambios del papel que no llegan, paradas de sopladora sin reporte propio (castigan el OEE del turno RES), vencimiento de la prueba de M365 (los UserForms solo se desarrollan en Excel de escritorio), crecimiento del alcance (2B), ingeniero sin responder.
+**Riesgos:** errores de transcripción desde el papel, carga con atraso, supervisores que no completan los campos nuevos, cambios del papel que no llegan, paradas de sopladora anotadas en el reporte RES con registro propio (riesgo de duplicar u omitir paradas), vencimiento de la prueba de M365 (los UserForms solo se desarrollan en Excel de escritorio), crecimiento del alcance (2B), ingeniero sin responder.
 
 **Señales de alerta:**
 
@@ -306,8 +304,8 @@ Siguen abiertas, sin bloquear la Fase 2: Q-06, Q-13, Q-14 y Q-15 (Fase 3).
 
 ## 12. Próximos pasos inmediatos
 
-- Confirmar este roadmap.
-- Prompt para que la IA ajuste el Doc (.md) a v0.6, tras la confirmación.
-- Reunión del lunes 2/11 con las preguntas de la sección 9.
-- Verificar la fecha de vencimiento de la prueba de M365 y definir un plan B en la notebook del ingeniero.
+La Doc v0.8 ya está lista (2026-11-04). Los pasos ahora son:
+
 - Arrancar F2.1 con los supuestos: rama, libro v0.2 y CompletarEstructura.
+- Esperar Q-29 para F2.2 (papel en blanco).
+- Verificar la fecha de vencimiento de la prueba de M365 y definir un plan B en la notebook del ingeniero.

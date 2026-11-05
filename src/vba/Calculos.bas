@@ -25,6 +25,14 @@ Public Function CalcularRendimiento(ByVal UnidadesTotales As Double, ByVal Veloc
     CalcularRendimiento = CalcularRendimientoOEE(UnidadesTotales, VelocidadNominal, TiempoOperativo)
 End Function
 
+Public Function CalcularRendimientoTeorico(ByVal UnidadesTotales As Double, ByVal ProduccionTeorica As Double) As Variant
+    If ProduccionTeorica <= 0 Then
+        CalcularRendimientoTeorico = Empty
+    Else
+        CalcularRendimientoTeorico = UnidadesTotales / ProduccionTeorica
+    End If
+End Function
+
 Public Function CalcularCalidad(ByVal UnidadesBuenas As Double, ByVal UnidadesTotales As Double) As Variant
     If UnidadesTotales = 0 Then
         CalcularCalidad = Empty
@@ -35,4 +43,14 @@ End Function
 
 Public Function CalcularOEE(ByVal disponibilidad As Double, ByVal rendimiento As Double, ByVal calidad As Double) As Double
     CalcularOEE = disponibilidad * rendimiento * calidad
+End Function
+
+Public Function CalcularUnidadesDesdePacks(ByVal pallets As Double, ByVal packsPorPallet As Double, _
+        ByVal packsSueltos As Double, ByVal unidadesPorPack As Double) As Double
+
+    CalcularUnidadesDesdePacks = (pallets * packsPorPallet + packsSueltos) * unidadesPorPack
+End Function
+
+Public Function CalcularLitros(ByVal unidades As Double, ByVal volumenLitros As Double) As Double
+    CalcularLitros = unidades * volumenLitros
 End Function

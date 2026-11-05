@@ -1,6 +1,6 @@
 # Catálogos y parámetros iniciales
 
-Fuente: `doc-oficial.md` v0.5 (2026-10-29), secciones 4.11 (Parámetros) y 5 (Catálogos). Este archivo fija los datos iniciales que `tools/crear_libro.py` carga en las tablas de `libro/oee_v0.5_AAAA-MM-DD.xlsm`.
+Fuente: `documentación_oficial_v0_8.md` (2026-11-04), secciones 4.11 (Parámetros) y 5 (Catálogos). Este archivo fija los datos iniciales que `tools/crear_libro.py` carga en las tablas de `libro/oee_master.xlsm`.
 
 Reglas aplicadas (sección 5 del Doc):
 
@@ -19,7 +19,7 @@ Notas de implementación (no son valores nuevos, son vacíos deliberados):
 
 ## 1. `01_Parámetros` → `tblParametros`
 
-Sección 4.11 (8 filas). `producto_codigo` referencia `tblProductos`. Vigencia: P-03 a P-07 con vigencia hacia atrás supuesta 2026-01-01 (nota del Doc); P-01, P-02 y P-08 cargan `vigente_desde` = 2026-10-29 (fecha de la decisión del Doc; P-01 se actualizó ese día, P-02 y P-08 son parámetros globales aprobados y cargados en esta versión).
+Sección 4.11 (13 filas). `producto_codigo` referencia `tblProductos`. Vigencia: P-03 a P-07 y P-13 a P-17 con vigencia hacia atrás supuesta 2026-01-01 (nota del Doc); P-01, P-02 y P-08 cargan `vigente_desde` = 2026-10-29 (fecha de la decisión del Doc; P-01 se actualizó ese día, P-02 y P-08 son parámetros globales aprobados y cargados en esta versión).
 
 | id | nombre | parametro | ambito | producto_codigo | valor | unidad | vigente_desde | motivo | aprobado_por | estado |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -28,9 +28,14 @@ Sección 4.11 (8 filas). `producto_codigo` referencia `tblProductos`. Vigencia: 
 | P-03 | Velocidad nominal 500 sin gas | VEL_NOM_500_SG | Producto | 500SG | 90 | botellas/min | 2026-01-01 | | Ingeniero | Aprobado (vigencia supuesta) |
 | P-04 | Velocidad nominal 500 con gas | VEL_NOM_500_CG | Producto | 500CG | 70 | botellas/min | 2026-01-01 | | Ingeniero | Aprobado (vigencia supuesta) |
 | P-05 | Velocidad nominal 1500 sin gas | VEL_NOM_1500_SG | Producto | 1500SG | 70 | botellas/min | 2026-01-01 | | Ingeniero | Aprobado (vigencia supuesta) |
-| P-06 | Velocidad nominal 2000 sin gas | VEL_NOM_2000_SG | Producto | 2000SG | 70 | botellas/min | 2026-01-01 | | Ingeniero | Aprobado (vigencia supuesta) |
-| P-07 | Velocidad nominal bidón 6 L | VEL_NOM_BIDON_6L | Producto | BID6 | 10 | bidones/min | 2026-01-01 | | Ingeniero | Aprobado (vigencia supuesta) |
+| P-06 | Velocidad nominal 2000 sin gas (con envase) | VEL_NOM_2000_SG | Producto | 2000SG | 60 | botellas/min | 2026-01-01 | | Ingeniero | Propuesto (2026-11-04; antes 70) |
+| P-07 | Velocidad nominal bidón 6 L (con envase) | VEL_NOM_BIDON_6L | Producto | BID6 | 12 | bidones/min | 2026-01-01 | | Ingeniero | Propuesto (2026-11-04; antes 10) |
 | P-08 | Tolerancia de comparación | TOLERANCIA_COMPARACION_PP | Global | | 0,05 | puntos porcentuales | 2026-10-29 | | Ingeniero + reg. 13 | Aprobado |
+| P-13 | Velocidad sopladora 500 sin gas (sin envase) | VEL_SOP_500_SG | Producto | 500SG | 2500 | botellas/hora | 2026-01-01 | | Ingeniero | Propuesto (2026-11-04) |
+| P-14 | Velocidad sopladora 500 con gas (sin envase) | VEL_SOP_500_CG | Producto | 500CG | 2300 | botellas/hora | 2026-01-01 | | Ingeniero | Propuesto (2026-11-04) |
+| P-15 | Velocidad sopladora 1500 sin gas (sin envase) | VEL_SOP_1500_SG | Producto | 1500SG | 2200 | botellas/hora | 2026-01-01 | | Ingeniero | Propuesto (2026-11-04) |
+| P-16 | Velocidad sopladora 2000 sin gas (sin envase) | VEL_SOP_2000_SG | Producto | 2000SG | 2100 | botellas/hora | 2026-01-01 | | Ingeniero | Propuesto (2026-11-04) |
+| P-17 | Velocidad sopladora bidón 6 L (sin envase) | VEL_SOP_BIDON_6L | Producto | BID6 | 500 | bidones/hora | 2026-01-01 | | Ingeniero | Propuesto (2026-11-04) |
 
 Columnas de `tblParametros` sin fila inicial: `vigente_hasta` (vacía), `motivo` (vacío), `fecha_aprobacion` (vacía; ver notas).
 
@@ -84,22 +89,22 @@ Sección 5.1: "código, motivo, origen, tipo sugerido, activo". Los motivos son 
 
 Sección 5.2: "código, nombre, equipo (SOP / RES), hora de inicio, hora de fin, hora de inicio y fin del descanso, días en que aplica, activo, vigencia desde / hasta" + columnas calculadas vacías `cruza_medianoche`, `td_minutos`, `descanso_minutos`.
 
-RES (tabla de 5.2). SOP (5.2: 4 turnos de 6 h, 7 días; nombre = código; descanso con horario no definido, se dejan vacías las horas de descanso).
+RES (tabla de 5.2). SOP (5.2: 4 turnos de 6 h, 7 días; nombre = código; descanso definido en Q-03).
 
 | codigo | nombre | equipo | hora_inicio | hora_fin | descanso_inicio | descanso_fin | dias_aplica | activo |
 |---|---|---|---|---|---|---|---|---|
 | RES-M | Mañana RES | RES | 06:00 | 14:00 | 11:55 | 12:30 | Lun–vie; sáb solo mañana | Sí |
 | RES-T | Tarde RES | RES | 14:00 | 22:00 | 18:55 | 19:30 | Lun–vie | Sí |
 | RES-N | Noche RES | RES | 22:00 | 06:00 | 02:55 | 03:30 | Lun–vie | Sí |
-| SOP-00 | SOP-00 | SOP | 00:00 | 06:00 | | | Lun–dom | Sí |
-| SOP-06 | SOP-06 | SOP | 06:00 | 12:00 | | | Lun–dom | Sí |
-| SOP-12 | SOP-12 | SOP | 12:00 | 18:00 | | | Lun–dom | Sí |
-| SOP-18 | SOP-18 | SOP | 18:00 | 00:00 | | | Lun–dom | Sí |
+| SOP-00 | SOP-00 | SOP | 00:00 | 06:00 | 04:00 | 04:35 | Lun–dom | Sí |
+| SOP-06 | SOP-06 | SOP | 06:00 | 12:00 | 10:00 | 10:35 | Lun–dom | Sí |
+| SOP-12 | SOP-12 | SOP | 12:00 | 18:00 | 16:00 | 16:35 | Lun–dom | Sí |
+| SOP-18 | SOP-18 | SOP | 18:00 | 00:00 | 22:00 | 22:35 | Lun–dom | Sí |
 
 Notas:
 
 - RES-N cruza la medianoche: pertenece a la fecha en que empieza (Q-04); `cruza_medianoche` se calcula, no se carga.
-- El descanso de SOP son 35 min (P-02) pero el horario no está definido: horas de descanso vacías.
+- El descanso de SOP son 35 min (P-02) y su horario está definido desde la Q-03 (04:00, 10:00, 16:00 y 22:00).
 - `vigente_desde` / `vigente_hasta` vacías: el Doc no da vigencia por turno.
 - Nombre de los turnos SOP = código: el Doc no les asigna nombre propio.
 
@@ -120,18 +125,24 @@ Sección 5.3: "código, producto, formato (botella / bidón), volumen (litros), 
 
 ## 7. `04_Cat_Productos` → `tblVelocidades`
 
-Sección 5.3.1: "producto, velocidad (botellas/min), vigencia desde, origen del dato" + `codigo` y `activo` por reglas globales (5). `producto` referencia `tblProductos`.
+Sección 5.3.1: "producto, condición de envase (con envase / sin envase), velocidad, unidad, vigencia desde, origen del dato" + `codigo` y `activo` por reglas globales (5). `producto` referencia `tblProductos`.
 
-| codigo | producto | velocidad | vigencia_desde | origen_dato | activo |
-|---|---|---|---|---|---|
-| VEL-01 | 500SG | 90 | 2026-01-01 | ingeniero | Sí |
-| VEL-02 | 500CG | 70 | 2026-01-01 | ingeniero | Sí |
-| VEL-03 | 1500SG | 70 | 2026-01-01 | ingeniero | Sí |
-| VEL-04 | 2000SG | 70 | 2026-01-01 | ingeniero | Sí |
-| VEL-05 | BID6 | 10 | 2026-01-01 | ingeniero | Sí |
+| codigo | producto | condicion_envase | velocidad | unidad | vigencia_desde | origen_dato | activo |
+|---|---|---|---|---|---|---|---|
+| VEL-01 | 500SG | con envase | 90 | botellas/min | 2026-01-01 | ingeniero | Sí |
+| VEL-02 | 500CG | con envase | 70 | botellas/min | 2026-01-01 | ingeniero | Sí |
+| VEL-03 | 1500SG | con envase | 70 | botellas/min | 2026-01-01 | ingeniero | Sí |
+| VEL-04 | 2000SG | con envase | 60 | botellas/min | 2026-01-01 | ingeniero | Sí |
+| VEL-05 | BID6 | con envase | 12 | bidones/min | 2026-01-01 | ingeniero | Sí |
+| VEL-06 | 500SG | sin envase | 2500 | botellas/hora | 2026-01-01 | ingeniero | Sí |
+| VEL-07 | 500CG | sin envase | 2300 | botellas/hora | 2026-01-01 | ingeniero | Sí |
+| VEL-08 | 1500SG | sin envase | 2200 | botellas/hora | 2026-01-01 | ingeniero | Sí |
+| VEL-09 | 2000SG | sin envase | 2100 | botellas/hora | 2026-01-01 | ingeniero | Sí |
+| VEL-10 | BID6 | sin envase | 500 | bidones/hora | 2026-01-01 | ingeniero | Sí |
 
-- Velocidad del bidón en bidones/min (5.3.1).
-- Vigencia supuesta 2026-01-01: nota de 4.11 (P-03 a P-07); origen del dato: ingeniero (Q-09).
+- Velocidad del bidón en bidones/min (con envase) y bidones/hora (sin envase); el resto, botellas/min (con envase) y botellas/hora (sin envase).
+- Vigencia supuesta 2026-01-01: nota de 4.11 (P-03 a P-07 y P-13 a P-17); origen del dato: ingeniero (Q-09).
+- Con envase manda la llenadora; sin envase manda la sopladora (4.5 y 5.3.1).
 
 ## 8. `05_Cat_Calidad` → `tblSeccionesRechazo`
 
@@ -167,12 +178,14 @@ Sección 5.5: "insumo, unidad de medida (unidades o peso), motivo, activo" + `co
 |---|---|---|---|---|
 | IN-01 | preformas | unidades | | Sí |
 | IN-02 | tapas | unidades | | Sí |
-| IN-03 | etiquetas | peso | | Sí |
-| IN-04 | termocontraíble | peso | | Sí |
-| IN-05 | film stretch | peso | | Sí |
+| IN-03 | etiquetas | gramos | | Sí |
+| IN-04 | termocontraíble | gramos | | Sí |
+| IN-05 | film stretch | gramos | | No |
+| IN-06 | envases | unidades | | Sí |
 
 - `motivo` vacío: el Doc da motivos como ejemplos ("preformas quemadas por una parada de la sopladora", "preformas caídas al piso") pero no los lista como filas iniciales; es una lista abierta que se carga con el uso.
-- Unidades: preformas y tapas en unidades; termocontraíble, etiquetas y film stretch en peso (5.5). "A confirmar por insumo" (gramos o kilos).
+- Unidades (Q-25 aprobada): preformas, envases y tapas en unidades; etiquetas y termocontraíble en gramos.
+- Film stretch queda opcional y fuera del papel v2: se marca inactivo.
 
 ## 11. `07_Cat_Personal` → `tblPuestos`
 

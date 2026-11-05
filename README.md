@@ -4,7 +4,7 @@ Cálculo de **OEE (Eficiencia General de los Equipos)** para la línea de embote
 
 El OEE se calcula **por turno** y se agrega por día y semana. Los reportes y el tablero se generan dentro del propio libro.
 
-> **Estado:** en desarrollo. Versión de documentación: **v0.5** (2026-10-29). Ver [Roadmap](#roadmap).
+> **Estado:** en desarrollo. Versión de documentación: **v0.8** (2026-11-04). Ver [Roadmap F2](<docs/roadmaps/Roadmap Fase 2 datos y formularios (Etapa 2).md>).
 
 ---
 
@@ -22,7 +22,7 @@ OEE = Disponibilidad × Rendimiento × Calidad
 
 La línea medida es completa (sopladora, llenadora, etiquetadora y forradora), no máquina por máquina. Los productos son botellas (500 ml, 1500 ml y 2000 ml, con y sin gas) y bidones de 6 L.
 
-Las reglas de negocio (clasificación de paradas, turnos, lotes, criterios de rechazo) están en [`doc-oficial.md`](doc-oficial.md). Ese documento es la **única fuente de verdad**: si el código y el documento no coinciden, manda el documento.
+Las reglas de negocio (clasificación de paradas, turnos, lotes, criterios de rechazo) están en [`documentación_oficial_v0_8.md`](documentación_oficial_v0_8.md). Ese documento es la **única fuente de verdad**: si el código y el documento no coinciden, manda el documento.
 
 ---
 
@@ -30,18 +30,25 @@ Las reglas de negocio (clasificación de paradas, turnos, lotes, criterios de re
 
 ```
 palau-OEE/
-├─ doc-oficial.md          Reglas, fórmulas y decisiones aprobadas (fuente de verdad)
-├─ roadmap.md              Plan por fases, dependencias y riesgos
+├─ documentación_oficial_v0_8.md  Reglas, fórmulas y decisiones aprobadas (fuente de verdad)
 ├─ docs/
 │  ├─ estructura-datos.md  Hojas, tablas y encabezados del libro maestro
 │  ├─ catalogos-iniciales.md  Parámetros y catálogos iniciales
+│  ├─ roadmaps/             Plan de fases, dependencias y riesgos
 │  └─ pedidos-ia/          Registro de pedidos de código a la IA
 ├─ src/vba/                Módulos VBA exportados (.bas)
+│  ├─ Utils.bas            Helpers comunes (tablas, columnas, fechas, números)
 │  ├─ Calculos.bas         Funciones puras de cálculo (Disponibilidad, Rendimiento, Calidad, OEE)
-│  ├─ Agregacion.bas       Agregación por día y semana
-│  └─ Tests.bas            Casos de prueba
+│  ├─ Validaciones.bas     Reglas puras de validación de carga
+│  ├─ AccesoHojas.bas      Lectura y escritura de tablas (única escritura de producción)
+│  ├─ Agregacion.bas       Agregación por turno y día
+│  ├─ Modulo_Estructura.bas  Migración idempotente de estructura
+│  ├─ DatosPrueba.bas      Fixtures de prueba
+│  ├─ Tests.bas            Casos de prueba
+│  └─ ExportarModulos.bas  Exporta módulos y formularios a src/vba/
 ├─ tools/
-│  └─ crear_libro.py       Genera el libro maestro con Excel COM
+│  ├─ crear_libro.py       Genera el libro maestro con Excel COM
+│  └─ test_compatibilidad.py  Verifica columnas del libro contra el VBA
 ├─ data/ejemplo/           Datos ficticios para pruebas
 ├─ tests/                  Casos de prueba
 └─ libro/                  Libro .xlsm de trabajo (no versionado)
@@ -77,7 +84,7 @@ python -m pip install pywin32
 python tools/crear_libro.py
 ```
 
-Crea `libro/oee_v0.5_AAAA-MM-DD.xlsm` con las 19 hojas, las tablas de Excel, los catálogos iniciales y las validaciones. La estructura exacta está en [`docs/estructura-datos.md`](docs/estructura-datos.md).
+Crea `libro/oee_master.xlsm` con las 20 hojas, las tablas de Excel, los catálogos iniciales y las validaciones. La estructura exacta está en [`docs/estructura-datos.md`](docs/estructura-datos.md).
 
 ### 2. Importar o exportar el código VBA
 
@@ -85,7 +92,7 @@ Para exportar los módulos a `src/vba/` desde el libro, activar en Excel:
 
 *Opciones > Centro de confianza > Configuración de macros > Confiar en el acceso al modelo de objetos de proyectos de VBA*
 
-Luego ejecutar la macro `ExportarVBA` (ver `roadmap.md`, sección 5).
+Luego ejecutar la macro `ExportarModulos` del módulo `ExportarModulos.bas`.
 
 ### 3. Ejecutar las pruebas
 
@@ -95,7 +102,7 @@ Los casos de prueba están en `src/vba/Tests.bas` y en `tests/`. Deben pasar **a
 
 ## Control de cambios
 
-- Toda regla o fórmula cambia primero en `doc-oficial.md`, con fecha y aprobación. Después se refleja en el código.
+- Toda regla o fórmula cambia primero en `documentación_oficial_v0_8.md`, con fecha y aprobación. Después se refleja en el código.
 - Cada cambio relevante queda registrado en la sección 13 del documento.
 - Ramas: `main` (estable), `feature/...`, `fix/...`.
 - Commits con prefijo: `feat(...)`, `fix(...)`, `test:`, `docs:`.
@@ -110,20 +117,20 @@ Por `.gitignore`: libros de Excel (`*.xlsm`, `*.xlsx`, `*.xlsb`), archivos tempo
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| F0 | Definiciones de negocio y caso de prueba con un turno real calculado a mano | En curso |
-| F1 | Núcleo de cálculo (Etapa 1) | En curso |
-| F2 | Datos y formularios de carga (Etapa 2) | Pendiente |
+| F0 | Definiciones de negocio y caso de prueba con un turno real calculado a mano | Completado |
+| F1 | Núcleo de cálculo (Etapa 1) | Completado |
+| F2 | Datos y formularios de carga (Etapa 2) | En curso: F2.1 y F2.3 completadas; F2.4 pausada para estabilizar |
 | F3 | Reportes y dashboard (Etapa 3) | Pendiente |
 | F4 | Estabilización y entrega (versión 1.0) | Pendiente |
 
-El detalle de cada fase, sus criterios de aceptación y los riesgos asociados está en [`roadmap.md`](roadmap.md).
+El detalle de cada fase, sus criterios de aceptación y los riesgos asociados está en [`docs/roadmaps/Roadmap Fase 2 datos y formularios (Etapa 2).md`](<docs/roadmaps/Roadmap Fase 2 datos y formularios (Etapa 2).md>).
 
 ### Criterio de éxito
 
-El libro debe coincidir con un turno real calculado a mano, con una tolerancia de **0,05 puntos porcentuales** para el OEE y cada factor (ver `doc-oficial.md`, sección 1.4).
+El libro debe coincidir con un turno real calculado a mano, con una tolerancia de **0,05 puntos porcentuales** para el OEE y cada factor (ver `documentación_oficial_v0_8.md`, sección 1.4).
 
 ---
 
 ## Contacto
 
-Desarrollo: Joaquín. Las reglas de negocio las define y aprueba el ingeniero de planta, dueño de [`doc-oficial.md`](doc-oficial.md).
+Desarrollo: Joaquín. Las reglas de negocio las define y aprueba el ingeniero de planta, dueño de [`documentación_oficial_v0_8.md`](documentación_oficial_v0_8.md).

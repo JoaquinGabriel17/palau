@@ -5,7 +5,7 @@
 Uso:
     python tools/crear_libro.py
 
-Crea libro/oee_v0.5_AAAA-MM-DD.xlsm con las 19 hojas del libro maestro,
+Crea libro/oee_master.xlsm con las 20 hojas del libro maestro,
 una Excel Table por catálogo y por conjunto de datos, encabezados y datos
 iniciales, validación Sí/No en las columnas `activo`, columnas de fecha en
 formato fecha real (sin texto) y sin celdas combinadas. Guarda como .xlsm
@@ -29,7 +29,7 @@ except ImportError:  # pragma: no cover
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
-VERSION = "0.5"
+VERSION = "0.2"
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIR_LIBRO = os.path.join(RAIZ, "libro")
 
@@ -59,13 +59,14 @@ HOJAS = [
     "15_Reducciones",
     "16_PerdidasInsumo",
     "17_PersonalTurno",
+    "18_TramosSinEnvase",
     "20_Calculos",
     "21_Dashboard",
     "90_Tests",
 ]
 
 # Columnas por tipo (según docs/estructura-datos.md)
-COL_SI_NO = {"activo"}
+COL_SI_NO = {"activo", "anulado"}
 COL_FECHA = {
     "vigente_desde",
     "vigente_hasta",
@@ -76,9 +77,10 @@ COL_FECHA = {
 COL_FECHA_HORA = {"fecha_hora_inicio", "fecha_hora_fin"}
 COL_HORA = {"hora_inicio", "hora_fin", "descanso_inicio", "descanso_fin"}
 
-FORMATO_FECHA = "DD/MM/YYYY"
-FORMATO_FECHA_HORA = "DD/MM/YYYY HH:MM"
-FORMATO_HORA = "HH:MM"
+# Excel en español usa "aaaa" para el año; "hh:mm" para la hora.
+FORMATO_FECHA = "dd/mm/aaaa"
+FORMATO_FECHA_HORA = "dd/mm/aaaa hh:mm"
+FORMATO_HORA = "hh:mm"
 
 BUFFER_FILAS = 50  # filas futuras con formato/validación ya aplicados
 
@@ -91,6 +93,13 @@ def D(anio, mes, dia):
 def T(hora, minuto):
     """Hora del día como serial de Excel (fracción del día, formato HH:MM)."""
     return (hora * 60 + minuto) / 1440.0
+
+
+def serial_excel(valor):
+    """Convierte date/datetime a serial de Excel sin pasar por la zona horaria de COM."""
+    base = dt.datetime(1899, 12, 30)
+    delta = valor - base
+    return delta.days + delta.seconds / 86400.0 + delta.microseconds / 86400000000.0
 
 
 # ---------------------------------------------------------------------------
@@ -123,12 +132,22 @@ PARAM_ROWS = [
      "botellas/min", D(2026, 1, 1), "", "", "Ingeniero", "Aprobado (vigencia supuesta)", ""),
     ("P-05", "Velocidad nominal 1500 sin gas", "VEL_NOM_1500_SG", "Producto", "1500SG", 70,
      "botellas/min", D(2026, 1, 1), "", "", "Ingeniero", "Aprobado (vigencia supuesta)", ""),
-    ("P-06", "Velocidad nominal 2000 sin gas", "VEL_NOM_2000_SG", "Producto", "2000SG", 70,
-     "botellas/min", D(2026, 1, 1), "", "", "Ingeniero", "Aprobado (vigencia supuesta)", ""),
-    ("P-07", "Velocidad nominal bidón 6 L", "VEL_NOM_BIDON_6L", "Producto", "BID6", 10,
-     "bidones/min", D(2026, 1, 1), "", "", "Ingeniero", "Aprobado (vigencia supuesta)", ""),
+    ("P-06", "Velocidad nominal 2000 sin gas (con envase)", "VEL_NOM_2000_SG", "Producto", "2000SG", 60,
+     "botellas/min", D(2026, 1, 1), "", "", "Ingeniero", "Propuesto (2026-11-04; antes 70)", ""),
+    ("P-07", "Velocidad nominal bidón 6 L (con envase)", "VEL_NOM_BIDON_6L", "Producto", "BID6", 12,
+     "bidones/min", D(2026, 1, 1), "", "", "Ingeniero", "Propuesto (2026-11-04; antes 10)", ""),
     ("P-08", "Tolerancia de comparación", "TOLERANCIA_COMPARACION_PP", "Global", "", 0.05,
      "puntos porcentuales", D(2026, 10, 29), "", "", "Ingeniero + reg. 13", "Aprobado", ""),
+    ("P-13", "Velocidad sopladora 500 sin gas (sin envase)", "VEL_SOP_500_SG", "Producto", "500SG", 2500,
+     "botellas/hora", D(2026, 1, 1), "", "", "Ingeniero", "Propuesto (2026-11-04)", ""),
+    ("P-14", "Velocidad sopladora 500 con gas (sin envase)", "VEL_SOP_500_CG", "Producto", "500CG", 2300,
+     "botellas/hora", D(2026, 1, 1), "", "", "Ingeniero", "Propuesto (2026-11-04)", ""),
+    ("P-15", "Velocidad sopladora 1500 sin gas (sin envase)", "VEL_SOP_1500_SG", "Producto", "1500SG", 2200,
+     "botellas/hora", D(2026, 1, 1), "", "", "Ingeniero", "Propuesto (2026-11-04)", ""),
+    ("P-16", "Velocidad sopladora 2000 sin gas (sin envase)", "VEL_SOP_2000_SG", "Producto", "2000SG", 2100,
+     "botellas/hora", D(2026, 1, 1), "", "", "Ingeniero", "Propuesto (2026-11-04)", ""),
+    ("P-17", "Velocidad sopladora bidón 6 L (sin envase)", "VEL_SOP_BIDON_6L", "Producto", "BID6", 500,
+     "bidones/hora", D(2026, 1, 1), "", "", "Ingeniero", "Propuesto (2026-11-04)", ""),
 ]
 
 # ---------------------------------------------------------------------------
@@ -203,13 +222,13 @@ TURNOS_ROWS = [
      "Lun–vie", "Sí", "", "", "", "", ""),
     ("RES-N", "Noche RES", "RES", T(22, 0), T(6, 0), T(2, 55), T(3, 30),
      "Lun–vie", "Sí", "", "", "", "", ""),
-    ("SOP-00", "SOP-00", "SOP", T(0, 0), T(6, 0), "", "",
+    ("SOP-00", "SOP-00", "SOP", T(0, 0), T(6, 0), T(4, 0), T(4, 35),
      "Lun–dom", "Sí", "", "", "", "", ""),
-    ("SOP-06", "SOP-06", "SOP", T(6, 0), T(12, 0), "", "",
+    ("SOP-06", "SOP-06", "SOP", T(6, 0), T(12, 0), T(10, 0), T(10, 35),
      "Lun–dom", "Sí", "", "", "", "", ""),
-    ("SOP-12", "SOP-12", "SOP", T(12, 0), T(18, 0), "", "",
+    ("SOP-12", "SOP-12", "SOP", T(12, 0), T(18, 0), T(16, 0), T(16, 35),
      "Lun–dom", "Sí", "", "", "", "", ""),
-    ("SOP-18", "SOP-18", "SOP", T(18, 0), T(0, 0), "", "",
+    ("SOP-18", "SOP-18", "SOP", T(18, 0), T(0, 0), T(22, 0), T(22, 35),
      "Lun–dom", "Sí", "", "", "", "", ""),
 ]
 
@@ -226,14 +245,19 @@ PRODUCTOS_ROWS = [
     ("BID6", "Bidón", "bidón", 6.0, 1, 168, "Sí"),
 ]
 
-VELOCIDADES_HEADERS = ["codigo", "producto", "velocidad", "vigencia_desde",
-                       "origen_dato", "activo"]
+VELOCIDADES_HEADERS = ["codigo", "producto", "condicion_envase", "velocidad",
+                       "unidad", "vigencia_desde", "origen_dato", "activo"]
 VELOCIDADES_ROWS = [
-    ("VEL-01", "500SG", 90, D(2026, 1, 1), "ingeniero", "Sí"),
-    ("VEL-02", "500CG", 70, D(2026, 1, 1), "ingeniero", "Sí"),
-    ("VEL-03", "1500SG", 70, D(2026, 1, 1), "ingeniero", "Sí"),
-    ("VEL-04", "2000SG", 70, D(2026, 1, 1), "ingeniero", "Sí"),
-    ("VEL-05", "BID6", 10, D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-01", "500SG", "con envase", 90, "botellas/min", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-02", "500CG", "con envase", 70, "botellas/min", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-03", "1500SG", "con envase", 70, "botellas/min", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-04", "2000SG", "con envase", 60, "botellas/min", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-05", "BID6", "con envase", 12, "bidones/min", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-06", "500SG", "sin envase", 2500, "botellas/hora", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-07", "500CG", "sin envase", 2300, "botellas/hora", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-08", "1500SG", "sin envase", 2200, "botellas/hora", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-09", "2000SG", "sin envase", 2100, "botellas/hora", D(2026, 1, 1), "ingeniero", "Sí"),
+    ("VEL-10", "BID6", "sin envase", 500, "bidones/hora", D(2026, 1, 1), "ingeniero", "Sí"),
 ]
 
 # ---------------------------------------------------------------------------
@@ -263,9 +287,10 @@ INSUMOS_HEADERS = ["codigo", "insumo", "unidad_medida", "motivo", "activo"]
 INSUMOS_ROWS = [
     ("IN-01", "preformas", "unidades", "", "Sí"),
     ("IN-02", "tapas", "unidades", "", "Sí"),
-    ("IN-03", "etiquetas", "peso", "", "Sí"),
-    ("IN-04", "termocontraíble", "peso", "", "Sí"),
-    ("IN-05", "film stretch", "peso", "", "Sí"),
+    ("IN-03", "etiquetas", "gramos", "", "Sí"),
+    ("IN-04", "termocontraíble", "gramos", "", "Sí"),
+    ("IN-05", "film stretch", "gramos", "", "No"),
+    ("IN-06", "envases", "unidades", "", "Sí"),
 ]
 
 PUESTOS_HEADERS = ["codigo", "puesto", "equipo", "activo"]
@@ -299,24 +324,30 @@ TABLAS = [
     ("10_Lotes", "tblLotes",
      ["id_lote", "numero_lote", "producto", "fecha_hora_inicio", "fecha_hora_fin"], []),
     ("11_Turnos", "tblTurnosRegistro",
-     ["id_turno", "id_turno_lote", "id_lote", "fecha", "turno_codigo", "equipo",
-      "fecha_hora_inicio", "fecha_hora_fin"], []),
+     ["id_turno", "id_turno_lote", "id_lote", "nro_reporte", "fecha",
+      "turno_codigo", "equipo", "encargado", "estado_revision", "anulado",
+      "notas_sin_horario", "observaciones", "velocidad_informada",
+      "fecha_hora_inicio", "fecha_hora_fin", "control_calidad",
+      "nro_registro_sopladora", "registros_bolsones"], []),
     ("12_Paradas", "tblParadas",
      ["id", "fecha", "turno", "linea_id", "id_lote", "id_turno_lote",
       "fecha_hora_inicio", "fecha_hora_fin", "duracion_min", "origen", "motivo",
-      "tipo", "codigo", "observaciones"], []),
+      "tipo", "codigo", "interpretada", "observaciones"], []),
     ("13_Produccion", "tblProduccion",
      ["fecha", "turno", "linea_id", "lote", "id_turno_lote", "producto",
       "unidades_producidas", "pallets", "litros", "velocidad_nominal"], []),
     ("14_Rechazos", "tblRechazos",
-     ["fecha", "turno", "lote", "id_turno_lote", "seccion", "motivo", "cantidad"], []),
+     ["fecha", "turno", "lote", "id_turno_lote", "seccion", "motivo", "cantidad",
+      "detalle"], []),
     ("15_Reducciones", "tblReducciones",
      ["fecha", "turno", "id_turno_lote", "origen", "motivo",
       "fecha_hora_inicio", "fecha_hora_fin", "velocidad_real"], []),
     ("16_PerdidasInsumo", "tblPerdidasInsumo",
-     ["fecha", "turno", "insumo", "cantidad", "unidad", "motivo"], []),
+     ["fecha", "turno", "insumo", "cantidad", "unidad", "motivo", "detalle"], []),
     ("17_PersonalTurno", "tblPersonalTurno",
      ["fecha", "turno", "puesto", "persona"], []),
+    ("18_TramosSinEnvase", "tblTramosSinEnvase",
+     ["id_turno_lote", "fecha_hora_inicio", "fecha_hora_fin"], []),
 ]
 
 
@@ -325,10 +356,31 @@ def normalizar(valor):
     if valor is None or valor == "":
         return None
     if isinstance(valor, dt.datetime):
-        return valor
+        return serial_excel(valor)
     if isinstance(valor, dt.date):
-        return dt.datetime(valor.year, valor.month, valor.day)
+        return serial_excel(dt.datetime(valor.year, valor.month, valor.day))
     return valor
+
+
+def validar_definiciones():
+    """Falla antes de abrir Excel si hay hojas, tablas o columnas duplicadas."""
+    if len(HOJAS) != len(set(HOJAS)):
+        raise ValueError("Hay nombres de hoja duplicados en HOJAS")
+
+    nombres_tablas = [tabla[1] for tabla in TABLAS]
+    if len(nombres_tablas) != len(set(nombres_tablas)):
+        raise ValueError("Hay nombres de tabla duplicados en TABLAS")
+
+    for hoja, nombre, headers, _ in TABLAS:
+        if hoja not in HOJAS:
+            raise ValueError(
+                "{0}: la hoja {1} no existe en HOJAS".format(nombre, hoja))
+        if len(headers) != len(set(headers)):
+            duplicadas = sorted(
+                {h for h in headers if headers.count(h) > 1})
+            raise ValueError(
+                "{0}: columnas duplicadas: {1}".format(
+                    nombre, ", ".join(duplicadas)))
 
 
 def agregar_validacion_sino(rango, separador):
@@ -412,17 +464,19 @@ def escribir_portada(ws, hoy):
     ws.Cells(2, 1).Value = "Versión"
     ws.Cells(2, 2).Value = "v{0}".format(VERSION)
     ws.Cells(3, 1).Value = "Generado"
-    ws.Cells(3, 2).Value = D(hoy.year, hoy.month, hoy.day)
+    ws.Cells(3, 2).Value = serial_excel(D(hoy.year, hoy.month, hoy.day))
     ws.Cells(3, 2).NumberFormat = FORMATO_FECHA
     ws.Cells(4, 1).Value = "Fuente"
-    ws.Cells(4, 2).Value = "doc-oficial.md v0.5 (2026-10-29)"
+    ws.Cells(4, 2).Value = "documentación_oficial_v0_8.md (2026-11-04)"
     ws.Cells(5, 1).Value = "Generador"
     ws.Cells(5, 2).Value = "tools/crear_libro.py"
 
 
 def main():
+    validar_definiciones()
+
     hoy = dt.date.today()
-    nombre_archivo = "oee_v0.5_{0}.xlsm".format(hoy.isoformat())
+    nombre_archivo = "oee_master.xlsm"
     ruta = os.path.join(DIR_LIBRO, nombre_archivo)
     os.makedirs(DIR_LIBRO, exist_ok=True)
 
