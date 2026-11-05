@@ -847,7 +847,7 @@ El libro maestro oee\_vX.Y\_AAAA-MM-DD.xlsm tiene una Excel Table por catálogo 
 
 · **tblTramosSinEnvase:** id\_turno\_lote, hora de inicio y fin del tramo sin envase (fecha y hora completas). Cero, uno o varios tramos por reporte; lo que no está en un tramo es con envase. **Propuesto (2026-11-04)**.
 
-· **tblReducciones:** fecha, turno, id\_turno\_lote, origen, motivo, hora de inicio y fin, velocidad real.
+· **tblReducciones:** id, fecha, turno, id\_turno\_lote, origen, motivo, fecha\_hora\_inicio, fecha\_hora\_fin, velocidad real. La columna id se agrega para cumplir el principio 8.3 (IDs únicos) y habilitar el CRUD de reducciones en F2.2. **Propuesto (2026-11-06).**
 
 · **tblPerdidasInsumo:** fecha, turno, insumo, unidad (unidades o gramos), cantidad, motivo, **observaciones**.
 
@@ -1072,6 +1072,8 @@ Por cada pregunta: número, pregunta, fecha, responsable, estado.
 · **2026-11-04** · v0.8: **Aprobación y cierre de preguntas.** Se aplican las respuestas de la revisión del 2026-11-04. Cierres: Q-03 (descanso SOP 04:00, 10:00, 16:00, 22:00); Q-06 (rechazo tardío repartido equitativamente); Q-13 (semana lun-dom, dashboard Excel); Q-14 y Q-15 retiradas; Q-19 (D-01 oficial en caso 498: limpiezas A y C, TO 330, OEE 61,4%); Q-22 (TD = horario anotado); Q-23 (sopladora registro propio, se guarda número); Q-25 (insumos y unidades definidas); Q-26 (control de calidad y observaciones entran como texto); Q-28 (velocidad nominal informativa); Q-30 (cambio de formato es A y C, **Caso 2 recalculado a 73,5%**); Q-31 (trazabilidad solo línea, bolsones reservado); Q-32 (reducciones en misma hoja, admin imprime). Actualización de catálogos en secciones 5.2, 5.3.1 y 5.5. Modificación de estructura en sección 8 (tblRechazos, tblPerdidasInsumo, tblTurnosRegistro). Preguntas abiertas remanentes: Q-21, Q-27, Q-29 (parcial) · Joaquín · estado: Aprobado (2026-11-04).
 
 · [2026-11-06] · v0.9: Reordenamiento del roadmap. La Etapa 3 (Dashboard) se adelanta y se ejecuta antes de la F2.4 (UserForms). Se congela el esquema de datos para permitir desarrollo del tablero sin formularios. Plan B para M365: desarrollo en Excel de escritorio. · Joaquín · estado: Propuesto.
+
+· [2026-11-06] · v0.9: Se agrega columna 'id' a tblReducciones para cumplir principio 8.3 (IDs únicos) y habilitar CRUD en F2.2. Se congelan APIs de lectura por período para F3. · Joaquín · estado: Propuesto.
 
 ## **14\. Control de versiones del archivo Excel**
 

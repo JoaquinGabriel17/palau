@@ -86,6 +86,18 @@ COLUMNAS_ESPERADAS = {
         "fecha_hora_inicio",
         "fecha_hora_fin",
     ],
+    # Seccion 2.17 del Doc (la migracion F2a agrega `id`).
+    "tblReducciones": [
+        "id",
+        "fecha",
+        "turno",
+        "id_turno_lote",
+        "origen",
+        "motivo",
+        "fecha_hora_inicio",
+        "fecha_hora_fin",
+        "velocidad_real",
+    ],
 }
 
 

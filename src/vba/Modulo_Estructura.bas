@@ -86,6 +86,13 @@ Public Sub CompletarEstructura(Optional ByVal silencioso As Boolean = False)
         FormatearFechas lo
     End If
 
+    ' 5b. tblReducciones: columna id (principio 8.3, IDs unicos; CRUD en F2.2).
+    Set lo = AsegurarTabla("15_Reducciones", "tblReducciones", HeadersReducciones())
+    If Not lo Is Nothing Then
+        AsegurarColumna lo, "id", 1
+        FormatearFechas lo
+    End If
+
     ' 6. Validaciones de columnas de catalogos y de la columna activo (Si/No).
     ConfigurarValidaciones sep
 
@@ -521,6 +528,12 @@ Private Function HeadersVelocidades() As Variant
     HeadersVelocidades = Array( _
         "codigo", "producto", "condicion_envase", "velocidad", "unidad", _
         "vigencia_desde", "origen_dato", "activo")
+End Function
+
+Private Function HeadersReducciones() As Variant
+    HeadersReducciones = Array( _
+        "id", "fecha", "turno", "id_turno_lote", "origen", "motivo", _
+        "fecha_hora_inicio", "fecha_hora_fin", "velocidad_real")
 End Function
 
 Private Function HojaEstructura(ByVal nombre As String) As Worksheet

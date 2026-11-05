@@ -173,9 +173,12 @@ Sección 8.2: "una fila por sección y motivo: fecha, turno, lote, `id_turno_lot
 
 ### 2.17 `15_Reducciones` → `tblReducciones`
 
-Sección 8.2: "fecha, turno, `id_turno_lote`, origen, motivo, hora de inicio y fin, velocidad real":
+Sección 8.2: "id, fecha, turno, `id_turno_lote`, origen, motivo, hora de inicio y fin, velocidad real":
 
-`fecha` · `turno` · `id_turno_lote` · `origen` · `motivo` · `fecha_hora_inicio` · `fecha_hora_fin` · `velocidad_real`
+`id` · `fecha` · `turno` · `id_turno_lote` · `origen` · `motivo` · `fecha_hora_inicio` · `fecha_hora_fin` · `velocidad_real`
+
+- `id` es el identificador único de la reducción (principio 8.3, IDs únicos); el VBA lo genera con prefijo `R-` y la fecha del reporte. **Propuesto (2026-11-06).**
+- `origen` guarda el código (`OR-xx`) del catálogo de orígenes; `motivo` el código (`MO-xx`) del catálogo de motivos.
 
 ### 2.18 `16_PerdidasInsumo` → `tblPerdidasInsumo`
 

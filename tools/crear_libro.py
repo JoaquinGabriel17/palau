@@ -340,7 +340,7 @@ TABLAS = [
      ["fecha", "turno", "lote", "id_turno_lote", "seccion", "motivo", "cantidad",
       "detalle"], []),
     ("15_Reducciones", "tblReducciones",
-     ["fecha", "turno", "id_turno_lote", "origen", "motivo",
+     ["id", "fecha", "turno", "id_turno_lote", "origen", "motivo",
       "fecha_hora_inicio", "fecha_hora_fin", "velocidad_real"], []),
     ("16_PerdidasInsumo", "tblPerdidasInsumo",
      ["fecha", "turno", "insumo", "cantidad", "unidad", "motivo", "detalle"], []),
