@@ -2,9 +2,9 @@
 
 Planta embotelladora de agua · Proyecto de cálculo de OEE en Excel con VBA
 
-· **Versión del documento:** v0.8
+· **Versión del documento:** v0.9
 
-· **Última actualización:** 2026-11-04
+· **Última actualización:** 2026-11-06
 
 ## **0\. Reglas de este documento**
 
@@ -919,7 +919,7 @@ El criterio de terminado de Etapa 2 se cumple con 2A; 2B se aprueba aparte. **Pr
 
 **Ajuste de Etapa 1 (Propuesto 2026-11-04):** el cálculo del Rendimiento pasa a usar la producción teórica por tramos (con y sin envase). Hay que actualizar 20\_Calculos y los tests: cambia el resultado esperado del Caso 2 (de 78,8% a 73,5% por Q-30), cambia el Caso 4 (de 70,9% a 82,7%) y se agrega el Caso 5. El caso 498 queda en 61,4% (D-01). Los casos 3 y 5 no cambian de resultado.
 
-**Etapa 3:** dashboard con tendencia y desglose de pérdidas. Terminado cuando el layout fue aprobado en boceto y el ingeniero valida que los números coinciden con su criterio.
+**Etapa 3:** dashboard con tendencia y desglose de pérdidas. Terminado cuando el layout fue aprobado en boceto y el ingeniero valida que los números coinciden con su criterio. **Propuesto (2026-11-06): la Etapa 3 se adelanta y se ejecuta antes de la F2.4 (UserForms); el esquema de datos queda congelado para desarrollar el tablero sin formularios. Es el próximo hito visible del proyecto.**
 
 **Etapa 4:** prueba con datos reales durante una semana, correcciones, manual corto y aceptación final del ingeniero. Terminado cuando: aceptación con fecha en 13\.
 
@@ -1070,6 +1070,8 @@ Por cada pregunta: número, pregunta, fecha, responsable, estado.
 · **2026-11-04** · v0.7: se cargan las respuestas de la reunión con el ingeniero (grabación del 2026-11-03) y sus dibujos. Rendimiento con producción teórica por tramos y dos velocidades de referencia (con envase: llenadora; sin envase: sopladora), sin tratarlo como reducción de velocidad (3.1, 3.4, 4.3, 4.5, 5.3.1, 4.11 con P-06, P-07 y P-13 a P-17, RN-13 a RN-15); TD por registro (3.4, 4.8, RN-17); paradas simultáneas (4.4, RN-16); la sopladora sí tiene registro propio (4.2, Q-23); lote a las 00:00 con otro reporte (4.8, Q-24); papel v2 único (4.9, Q-20); detalle del rechazo y unificación del scrap (4.7); lista básica de insumos (5.5); trazabilidad (4.12, 8.2); Caso 4 recalculado (82,7%) y Caso 5 nuevo (7.4); ajuste de Etapa 1 (10); preguntas Q-30 a Q-32 · Joaquín · estado: Propuesto.
 
 · **2026-11-04** · v0.8: **Aprobación y cierre de preguntas.** Se aplican las respuestas de la revisión del 2026-11-04. Cierres: Q-03 (descanso SOP 04:00, 10:00, 16:00, 22:00); Q-06 (rechazo tardío repartido equitativamente); Q-13 (semana lun-dom, dashboard Excel); Q-14 y Q-15 retiradas; Q-19 (D-01 oficial en caso 498: limpiezas A y C, TO 330, OEE 61,4%); Q-22 (TD = horario anotado); Q-23 (sopladora registro propio, se guarda número); Q-25 (insumos y unidades definidas); Q-26 (control de calidad y observaciones entran como texto); Q-28 (velocidad nominal informativa); Q-30 (cambio de formato es A y C, **Caso 2 recalculado a 73,5%**); Q-31 (trazabilidad solo línea, bolsones reservado); Q-32 (reducciones en misma hoja, admin imprime). Actualización de catálogos en secciones 5.2, 5.3.1 y 5.5. Modificación de estructura en sección 8 (tblRechazos, tblPerdidasInsumo, tblTurnosRegistro). Preguntas abiertas remanentes: Q-21, Q-27, Q-29 (parcial) · Joaquín · estado: Aprobado (2026-11-04).
+
+· [2026-11-06] · v0.9: Reordenamiento del roadmap. La Etapa 3 (Dashboard) se adelanta y se ejecuta antes de la F2.4 (UserForms). Se congela el esquema de datos para permitir desarrollo del tablero sin formularios. Plan B para M365: desarrollo en Excel de escritorio. · Joaquín · estado: Propuesto.
 
 ## **14\. Control de versiones del archivo Excel**
 
