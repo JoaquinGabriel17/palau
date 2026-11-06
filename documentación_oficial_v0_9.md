@@ -867,45 +867,24 @@ El libro maestro oee\_vX.Y\_AAAA-MM-DD.xlsm tiene una Excel Table por catálogo 
 
 ## **9\. Reportes y dashboard**
 
-· **Reporte por turno:** OEE, los tres factores y el detalle de pérdidas (ver 4.10).
+**Contenido del tablero en orden de prioridad** (estado: Propuesto 2026-11-06):
 
-· **Reporte por día:** Esperando definición.
+1. **Filtros:** período (turno/semana), línea, producto, turno (RES/SOP).
+2. **Cuatro tarjetas:** OEE, Disponibilidad, Rendimiento, Calidad (con semáforo verde/amarillo/rojo).
+3. **Cascada de tiempos:** TD → PP → PE → TPL → A/F → A y C → TO (en minutos, como gráfico de barras apiladas o cascada).
+4. **Ranking de motivos de parada por máquina** (origen → tblOrigenes.clase), en horas, de mayor a menor (Pareto).
+5. **Acumulado de pequeñas paradas:** cantidad y minutos, con ranking de motivos.
+6. **Reducciones de velocidad:** listado con origen, motivo y duración. Sin tiempo equivalente perdido hasta resolver Q-21.
+7. **Litros producidos por período** (suma, no promedio).
+8. **Tendencia de OEE por turno** (gráfico de línea, un punto por turno, nunca promedio de OEE).
+9. **OEE por producto** (opcional, si el ingeniero lo pide).
+10. **Pérdida de insumo:** solo si el ingeniero la pide (hoy 'Esperando definición').
 
-· **Reporte por semana:** Lunes a domingo. **Aprobado (2026-11-04)**.
+**Reglas:** los reportes 'Pendiente de revisar' se incluyen en los cálculos pero se marcan con un ícono en el dashboard. Los reportes anulados se excluyen. Si un widget no tiene datos, muestra '—'. Los umbrales del semáforo viven en tblParametros.
 
 · **Período:** se elige con un selector de fecha (también se usa para sumar litros).
 
-· **Filtros:** línea, producto, turno.
-
-· **Contenido pedido por el ingeniero:** OEE y los tres factores con semáforo; ranking de motivos de parada por máquina (en horas); acumulado de pequeñas paradas (cantidad y minutos) con sus motivos; reducciones de velocidad con sus motivos; litros producidos por período.
-
 · **Para quién y dónde:** pantalla en Excel (dashboard personalizado). **Aprobado (2026-11-04)**.
-
-· **Estado:** Aprobado (semana y formato: definidos; tabla de semáforo/mockup: retirado por ahora).
-
-**Indicadores para proponerle (a elección del ingeniero)**
-
-· OEE, Disponibilidad, Rendimiento y Calidad.
-
-· Tiempo planificado, tiempo operativo y paradas (en minutos).
-
-· Unidades producidas, buenas y rechazadas.
-
-· Pérdidas por familia (Disponibilidad, Rendimiento, Calidad).
-
-· Paradas por motivo y por máquina, ordenadas de mayor a menor (Pareto).
-
-· Pequeñas paradas acumuladas (cantidad y minutos).
-
-· Reducciones de velocidad y sus motivos.
-
-· Rechazos por sección y motivo.
-
-· Pérdida de insumo (solo seguimiento, no entra en el OEE).
-
-· Litros producidos.
-
-· OEE por producto.
 
 ## **10\. Plan de entregas**
 
@@ -1074,6 +1053,8 @@ Por cada pregunta: número, pregunta, fecha, responsable, estado.
 · [2026-11-06] · v0.9: Reordenamiento del roadmap. La Etapa 3 (Dashboard) se adelanta y se ejecuta antes de la F2.4 (UserForms). Se congela el esquema de datos para permitir desarrollo del tablero sin formularios. Plan B para M365: desarrollo en Excel de escritorio. · Joaquín · estado: Propuesto.
 
 · [2026-11-06] · v0.9: Se agrega columna 'id' a tblReducciones para cumplir principio 8.3 (IDs únicos) y habilitar CRUD en F2.2. Se congelan APIs de lectura por período para F3. · Joaquín · estado: Propuesto.
+
+· [2026-11-06] · v0.9: Se define el contenido del tablero en sección 9 (Propuesto). Se agregan umbrales de semáforo en tblParametros (Propuesto). Los reportes 'Pendiente de revisar' se incluyen y marcan visualmente. · Joaquín · estado: Propuesto.
 
 ## **14\. Control de versiones del archivo Excel**
 
