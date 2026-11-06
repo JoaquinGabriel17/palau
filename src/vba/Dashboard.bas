@@ -34,6 +34,10 @@ Public Sub ActualizarDashboard()
     Dim filtros As TDatosFiltros
     Dim detalle As TDetallePeriodo
     Dim cascada As TCascadaTiempos
+    Dim pareto As Collection
+    Dim micro As Collection
+    Dim reducciones As Collection
+    Dim litros As Double
     Dim protegida As Boolean
     Dim pendientes As Boolean
     Dim lineaFiltro As String
@@ -64,6 +68,19 @@ Public Sub ActualizarDashboard()
         filtros.fechaDesde, filtros.fechaHasta, _
         filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
 
+    Set pareto = DashboardDatos.ObtenerParetoParadas( _
+        filtros.fechaDesde, filtros.fechaHasta, "origen", _
+        filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
+    Set micro = DashboardDatos.ObtenerMicroparadas( _
+        filtros.fechaDesde, filtros.fechaHasta, _
+        filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
+    Set reducciones = DashboardDatos.ObtenerReducciones( _
+        filtros.fechaDesde, filtros.fechaHasta, _
+        filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
+    litros = DashboardDatos.ObtenerLitros( _
+        filtros.fechaDesde, filtros.fechaHasta, _
+        filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
+
     If detalle.Encontrado Then
         EscribirTarjeta ws.Range("B7"), detalle.oee, "0.0%"
         EscribirTarjeta ws.Range("D7"), detalle.disponibilidad, "0.0%"
@@ -77,13 +94,17 @@ Public Sub ActualizarDashboard()
     End If
 
     EscribirCascada ws.Range("B12"), cascada
+    EscribirPareto ws.Range("A24"), pareto
+    EscribirMicroparadas ws.Range("A34"), micro
+    EscribirReducciones ws.Range("A42"), reducciones
+    EscribirLitros ws.Range("B49"), litros
     MarcarExcesos ws, detalle, detalle.Encontrado
 
     pendientes = MarcarPendientes(filtros.fechaDesde, filtros.fechaHasta)
     If pendientes Then
-        ws.Range("B22").Value = IconoAlerta() & " Hay reportes pendientes de revisar"
+        ws.Range("B3").Value = IconoAlerta() & " Hay reportes pendientes de revisar"
     Else
-        ws.Range("B22").Value = ""
+        ws.Range("B3").Value = ""
     End If
 
     ws.Range("A2").Value = "Actualizado: " & Format$(Now, "dd/mm/yyyy hh:mm")
@@ -104,6 +125,10 @@ Fallo:
         ws.Range("D7").Value = Guion()
         ws.Range("F7").Value = Guion()
         ws.Range("H7").Value = Guion()
+        ws.Range("A24").Value = Guion()
+        ws.Range("A34").Value = Guion()
+        ws.Range("A42").Value = Guion()
+        ws.Range("B49").Value = Guion()
         ws.Range("A2").Value = "Error al actualizar el dashboard: " & sErr
     End If
     Resume Cierre
@@ -260,6 +285,146 @@ Fallo:
 End Sub
 
 ' ==========================================================================
+' 5b. Widgets de perdidas: Pareto, microparadas, reducciones y litros
+' ==========================================================================
+
+Public Sub EscribirPareto(ByVal celdaInicio As Range, pareto As Collection)
+    Dim clases As Object
+    Dim origen As Object
+    Dim item As Object
+    Dim i As Long
+    Dim acum As Double
+    Dim clase As String
+
+    On Error GoTo Fallo
+
+    Set clases = NuevoDiccionario()
+    For Each origen In AccesoHojas.ListarOrigenes()
+        clases(CStr(origen("codigo"))) = CStr(origen("clase"))
+    Next origen
+
+    celdaInicio.Resize(7, 3).ClearContents
+
+    If pareto Is Nothing Then GoTo SinDatos
+    If pareto.Count = 0 Then GoTo SinDatos
+
+    acum = 0
+    For i = 1 To pareto.Count
+        Set item = pareto(i)
+
+        clase = CStr(item("clave"))
+        If clases.Exists(clase) Then
+            If Len(Trim$(CStr(clases(clase)))) > 0 Then clase = CStr(clases(clase))
+        End If
+
+        celdaInicio.Offset(i - 1, 0).Value = clase
+        celdaInicio.Offset(i - 1, 1).Value = Utils.NumeroSeguro(item("minutos")) / 60
+        celdaInicio.Offset(i - 1, 1).NumberFormat = "0.0"
+        acum = acum + Utils.NumeroSeguro(item("porcentaje"))
+        celdaInicio.Offset(i - 1, 2).Value = acum
+        celdaInicio.Offset(i - 1, 2).NumberFormat = "0.0%"
+    Next i
+    Exit Sub
+
+SinDatos:
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+    Exit Sub
+
+Fallo:
+    On Error Resume Next
+    celdaInicio.Resize(7, 3).ClearContents
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+End Sub
+
+Public Sub EscribirMicroparadas(ByVal celdaInicio As Range, micro As Collection)
+    Dim item As Object
+    Dim i As Long
+
+    On Error GoTo Fallo
+
+    celdaInicio.Resize(6, 3).ClearContents
+
+    If micro Is Nothing Then GoTo SinDatos
+    If micro.Count = 0 Then GoTo SinDatos
+
+    For i = 1 To micro.Count
+        Set item = micro(i)
+        celdaInicio.Offset(i - 1, 0).Value = CStr(item("motivo"))
+        celdaInicio.Offset(i - 1, 1).Value = Utils.NumeroSeguro(item("cantidad"))
+        celdaInicio.Offset(i - 1, 1).NumberFormat = "0"
+        celdaInicio.Offset(i - 1, 2).Value = Utils.NumeroSeguro(item("minutos"))
+        celdaInicio.Offset(i - 1, 2).NumberFormat = "0.0"
+    Next i
+    Exit Sub
+
+SinDatos:
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+    Exit Sub
+
+Fallo:
+    On Error Resume Next
+    celdaInicio.Resize(6, 3).ClearContents
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+End Sub
+
+Public Sub EscribirReducciones(ByVal celdaInicio As Range, red As Collection)
+    Dim item As Object
+    Dim i As Long
+
+    On Error GoTo Fallo
+
+    celdaInicio.Resize(6, 3).ClearContents
+
+    If red Is Nothing Then GoTo SinDatos
+    If red.Count = 0 Then GoTo SinDatos
+
+    For i = 1 To red.Count
+        Set item = red(i)
+        celdaInicio.Offset(i - 1, 0).Value = CStr(item("origen"))
+        celdaInicio.Offset(i - 1, 1).Value = CStr(item("motivo"))
+        celdaInicio.Offset(i - 1, 2).Value = Utils.NumeroSeguro(item("minutos"))
+        celdaInicio.Offset(i - 1, 2).NumberFormat = "0.0"
+    Next i
+    Exit Sub
+
+SinDatos:
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+    Exit Sub
+
+Fallo:
+    On Error Resume Next
+    celdaInicio.Resize(6, 3).ClearContents
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+End Sub
+
+Public Sub EscribirLitros(ByVal celda As Range, ByVal litros As Double)
+    On Error GoTo Fallo
+
+    If litros <= 0 Then
+        celda.Value = Guion()
+        celda.NumberFormat = "@"
+        celda.Font.Color = RGB(89, 89, 89)
+        Exit Sub
+    End If
+
+    celda.Value = litros
+    celda.NumberFormat = "#,##0 ""L"""
+    celda.Font.Color = RGB(0, 0, 0)
+    Exit Sub
+
+Fallo:
+    On Error Resume Next
+    celda.Value = Guion()
+    celda.NumberFormat = "@"
+End Sub
+
+' ==========================================================================
 ' 6. Reportes pendientes de revisar en el periodo
 ' ==========================================================================
 
@@ -353,7 +518,9 @@ Private Function Umbral(ByVal nombre As String, ByVal defecto As Double) As Doub
     Dim v As Variant
 
     v = AccesoHojas.ObtenerParametro(nombre, 0)
-    If IsNumeric(v) Then
+    If IsEmpty(v) Or IsNull(v) Or IsError(v) Then
+        Umbral = defecto
+    ElseIf IsNumeric(v) Then
         Umbral = CDbl(v) / 100
     Else
         Umbral = defecto
@@ -417,6 +584,14 @@ Private Function NormalizarLinea(ByVal s As String) As String
     Next i
 
     NormalizarLinea = n
+End Function
+
+Private Function NuevoDiccionario() As Object
+    Dim d As Object
+
+    Set d = CreateObject("Scripting.Dictionary")
+    d.CompareMode = 1
+    Set NuevoDiccionario = d
 End Function
 
 Private Function Guion() As String

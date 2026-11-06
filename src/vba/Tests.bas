@@ -114,6 +114,7 @@ Public Function RunAllTests() As Boolean
 
     ok = EjecutarFaseF3D1() And ok
     ok = EjecutarFaseF3D2() And ok
+    ok = EjecutarFaseF3D3() And ok
 
     Debug.Print "Resultados registrados: " & mCantidad
     RunAllTests = ok
@@ -308,6 +309,86 @@ Private Sub RestaurarSelectoresD2(ByVal ws As Worksheet)
     ws.Range("H4").Value = "1500"
     ws.Range("J4").Value = "Linea 1"
 End Sub
+
+' ==========================================================================
+' F3 D3 - Perdidas: Pareto, microparadas, reducciones y litros (parte 12).
+' Usa el dataset demo y el 498 real; al terminar limpia los DEMO-.
+' ==========================================================================
+
+Private Function EjecutarFaseF3D3() As Boolean
+    Dim ok As Boolean
+
+    Debug.Print "=== F3 D3: perdidas (Pareto, micro, reducciones, litros) ==="
+
+    ok = True
+    On Error GoTo Fallo
+
+    DatosDemo.LimpiarDatasetDemo True
+    DatosDemo.CargarDatasetDemoTexto
+
+    ok = Test_F3D3_Pareto498() And ok
+    ok = Test_F3D3_Reducciones498() And ok
+    ok = Test_F3D3_Litros498() And ok
+    ok = Test_F3D3_MicroSinDatos() And ok
+
+Cierre:
+    On Error GoTo 0
+    DatosDemo.LimpiarDatasetDemo True
+    EjecutarFaseF3D3 = ok
+    Exit Function
+
+Fallo:
+    Debug.Print "ERROR en EjecutarFaseF3D3: " & Err.Description
+    On Error Resume Next
+    DatosDemo.LimpiarDatasetDemo True
+    EjecutarFaseF3D3 = False
+End Function
+
+Private Function Test_F3D3_Pareto498() As Boolean
+    Dim col As Collection
+
+    Set col = ObtenerParetoParadas(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28))
+
+    Test_F3D3_Pareto498 = ValidarLogico("F3 D3 pareto 498", _
+        "al menos 2 origenes con paradas", col.Count >= 2)
+End Function
+
+Private Function Test_F3D3_Reducciones498() As Boolean
+    Dim col As Collection
+    Dim d As Object
+    Dim pasa As Boolean
+
+    Set col = ObtenerReducciones(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28))
+
+    pasa = (col.Count = 1)
+    If pasa Then
+        Set d = col(1)
+        pasa = (StrComp(CStr(d("motivo")), "falla de compresor", vbTextCompare) = 0) _
+               And (Abs(Utils.NumeroSeguro(d("minutos")) - 30) < 0.001)
+    End If
+
+    Test_F3D3_Reducciones498 = ValidarLogico("F3 D3 reducciones 498", _
+        "1 reduccion falla de compresor de 30 min", pasa)
+End Function
+
+Private Function Test_F3D3_Litros498() As Boolean
+    Dim litros As Double
+
+    litros = ObtenerLitros(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28))
+
+    Test_F3D3_Litros498 = ValidarLogico("F3 D3 litros 498", _
+        "litros mayor a 20.000", litros > 20000)
+End Function
+
+Private Function Test_F3D3_MicroSinDatos() As Boolean
+    Dim col As Collection
+
+    ' El 498 no tiene microparadas: todas sus paradas superan el umbral.
+    Set col = ObtenerMicroparadas(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28))
+
+    Test_F3D3_MicroSinDatos = ValidarLogico("F3 D3 microparadas 498", _
+        "periodo sin microparadas devuelve coleccion vacia", col.Count = 0)
+End Function
 
 Private Function Test_F3D1_Cascada498() As Boolean
     Dim caso As String
