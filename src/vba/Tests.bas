@@ -113,6 +113,7 @@ Public Function RunAllTests() As Boolean
     LimpiarDatosPrueba
 
     ok = EjecutarFaseF3D1() And ok
+    ok = EjecutarFaseF3D2() And ok
 
     Debug.Print "Resultados registrados: " & mCantidad
     RunAllTests = ok
@@ -187,6 +188,126 @@ Fallo:
     DatosDemo.LimpiarDatasetDemo True
     EjecutarFaseF3D1 = False
 End Function
+
+' ==========================================================================
+' F3 D2 - Hoja Dashboard: vista de turno, semaforo y cascada (parte 12).
+' Usa el dataset demo y el 498 real; al terminar restaura los selectores
+' del 498 y limpia los DEMO-.
+' ==========================================================================
+
+Private Function EjecutarFaseF3D2() As Boolean
+    Dim ok As Boolean
+    Dim tolerancia As Double
+    Dim ws As Worksheet
+    Dim protegida As Boolean
+
+    Debug.Print "=== F3 D2: hoja dashboard (vista de turno) ==="
+
+    ok = True
+    On Error GoTo Fallo
+
+    tolerancia = ToleranciaComparacionPP()
+
+    Set ws = ThisWorkbook.Worksheets("21_Dashboard")
+    protegida = ws.ProtectContents
+    If protegida Then ws.Unprotect
+
+    DatosDemo.LimpiarDatasetDemo True
+    DatosDemo.CargarDatasetDemoTexto
+
+    ok = Test_F3D2_Dashboard498(ws, tolerancia) And ok
+    ok = Test_F3D2_SinDatos(ws) And ok
+    ok = Test_F3D2_SemaforoVerde() And ok
+    ok = Test_F3D2_SemaforoAmarillo() And ok
+    ok = Test_F3D2_SemaforoRojo() And ok
+    ok = Test_F3D2_Pendientes() And ok
+
+Cierre:
+    On Error Resume Next
+    RestaurarSelectoresD2 ws
+    Dashboard.ActualizarDashboard
+    If protegida Then ws.Protect DrawingObjects:=False, Contents:=True, Scenarios:=False
+    On Error GoTo 0
+    DatosDemo.LimpiarDatasetDemo True
+    EjecutarFaseF3D2 = ok
+    Exit Function
+
+Fallo:
+    Debug.Print "ERROR en EjecutarFaseF3D2: " & Err.Description
+    On Error Resume Next
+    If Not ws Is Nothing Then
+        RestaurarSelectoresD2 ws
+        Dashboard.ActualizarDashboard
+        If protegida Then ws.Protect DrawingObjects:=False, Contents:=True, Scenarios:=False
+    End If
+    DatosDemo.LimpiarDatasetDemo True
+    EjecutarFaseF3D2 = False
+End Function
+
+Private Function Test_F3D2_Dashboard498(ByVal ws As Worksheet, ByVal tolerancia As Double) As Boolean
+    Dim oee As Double
+
+    Application.EnableEvents = False
+    ws.Range("B4").Value = DateSerial(2026, 9, 28)
+    ws.Range("D4").Value = DateSerial(2026, 9, 28)
+    ws.Range("F4").Value = "RES-T"
+    ws.Range("H4").Value = "1500"
+    ws.Range("J4").Value = "Linea 1"
+    Dashboard.ActualizarDashboard
+
+    oee = Numero(ws.Range("B7").Value)
+    Test_F3D2_Dashboard498 = ValidarPorcentaje("F3 D2 dashboard 498", "OEE", oee, 0.6138, tolerancia)
+End Function
+
+Private Function Test_F3D2_SinDatos(ByVal ws As Worksheet) As Boolean
+    Dim guion As String
+    Dim todas As Boolean
+
+    guion = ChrW(8212)
+
+    Application.EnableEvents = False
+    ws.Range("B4").Value = DateSerial(2026, 1, 1)
+    ws.Range("D4").Value = DateSerial(2026, 1, 1)
+    Dashboard.ActualizarDashboard
+
+    todas = (CStr(ws.Range("B7").Value) = guion) And _
+            (CStr(ws.Range("D7").Value) = guion) And _
+            (CStr(ws.Range("F7").Value) = guion) And _
+            (CStr(ws.Range("H7").Value) = guion)
+
+    Test_F3D2_SinDatos = ValidarLogico("F3 D2 dashboard sin datos", _
+        "4 tarjetas muestran guion", todas)
+End Function
+
+Private Function Test_F3D2_SemaforoVerde() As Boolean
+    Test_F3D2_SemaforoVerde = ValidarLogico("F3 D2 semaforo OEE 80", "verde", _
+        Dashboard.AplicarSemaforo(0.8, "OEE") = Dashboard.COLOR_VERDE)
+End Function
+
+Private Function Test_F3D2_SemaforoAmarillo() As Boolean
+    Test_F3D2_SemaforoAmarillo = ValidarLogico("F3 D2 semaforo OEE 65", "amarillo", _
+        Dashboard.AplicarSemaforo(0.65, "OEE") = Dashboard.COLOR_AMARILLO)
+End Function
+
+Private Function Test_F3D2_SemaforoRojo() As Boolean
+    Test_F3D2_SemaforoRojo = ValidarLogico("F3 D2 semaforo OEE 50", "rojo", _
+        Dashboard.AplicarSemaforo(0.5, "OEE") = Dashboard.COLOR_ROJO)
+End Function
+
+Private Function Test_F3D2_Pendientes() As Boolean
+    Test_F3D2_Pendientes = ValidarLogico("F3 D2 pendientes 498", "hay pendientes", _
+        Dashboard.MarcarPendientes(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28)))
+End Function
+
+Private Sub RestaurarSelectoresD2(ByVal ws As Worksheet)
+    If ws Is Nothing Then Exit Sub
+    Application.EnableEvents = False
+    ws.Range("B4").Value = DateSerial(2026, 9, 28)
+    ws.Range("D4").Value = DateSerial(2026, 9, 28)
+    ws.Range("F4").Value = "RES-T"
+    ws.Range("H4").Value = "1500"
+    ws.Range("J4").Value = "Linea 1"
+End Sub
 
 Private Function Test_F3D1_Cascada498() As Boolean
     Dim caso As String
