@@ -31,6 +31,33 @@ ARCHIVO = os.path.join(RAIZ, "libro", "oee_v0.2_2026-11-04.xlsm")
 FILA_INICIO = 6
 MAX_FILAS = 500
 
+DIR_BAS = os.path.join(RAIZ, "src", "vba")
+MOD_BASE = ["Calculos", "Modulo_Estructura", "Utils"]
+
+
+def reimportar_modulos(excel, wb):
+    """Reimporta los .bas de src/vba en la sesion activa.
+
+    Tras guardar/reabrir, el proyecto VBA puede quedar en un estado donde
+    excel.Run devuelve ' macros deshabilitadas'. Borrar los modulos estandar
+    e importarlos de nuevo en la misma sesion (base primero, con un Run de
+    CompletarEstructura en el medio) restablece el estado.
+    """
+    nombres = sorted(f[:-4] for f in os.listdir(DIR_BAS)
+                     if f.lower().endswith(".bas"))
+    base = [n for n in MOD_BASE if n in nombres]
+    resto = [n for n in nombres if n not in base]
+    proyecto = wb.VBProject
+    for componente in list(proyecto.VBComponents):
+        if componente.Type == 1:
+            proyecto.VBComponents.Remove(componente)
+    for nombre in base:
+        proyecto.VBComponents.Import(os.path.join(DIR_BAS, nombre + ".bas"))
+    excel.Run("Modulo_Estructura.CompletarEstructura", True)
+    for nombre in resto:
+        proyecto.VBComponents.Import(os.path.join(DIR_BAS, nombre + ".bas"))
+    excel.Run("Modulo_Estructura.CompletarEstructura", True)
+
 
 def main():
     ruta = sys.argv[1] if len(sys.argv) > 1 else ARCHIVO
@@ -52,10 +79,19 @@ def main():
         excel.Visible = False
         excel.DisplayAlerts = False
         excel.ScreenUpdating = False
+        excel.AutomationSecurity = 1  # msoAutomationSecurityForceEnable
 
         wb = excel.Workbooks.Open(ruta, 0, False)
 
         ws = wb.Worksheets("90_Tests")
+
+        # Sonda: si un Run simple falla, reimportar modulos en esta sesion.
+        try:
+            excel.Run("Utils.Tabla", "tblParametros")
+        except Exception:
+            print("AVISO: proyecto VBA inactivo; reimportando modulos...")
+            reimportar_modulos(excel, wb)
+            excel.Run("Utils.Tabla", "tblParametros")
 
         # ReportePruebas reescribe la hoja; limpiar para no arrastrar restos.
         ws.Range("A1:J200").Clear()

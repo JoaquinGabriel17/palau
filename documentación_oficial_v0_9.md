@@ -878,9 +878,9 @@ El libro maestro oee\_vX.Y\_AAAA-MM-DD.xlsm tiene una Excel Table por catálogo 
 7. **Litros producidos por período** (suma, no promedio).
 8. **Tendencia de OEE por turno** (gráfico de línea, un punto por turno, nunca promedio de OEE).
 9. **OEE por producto** (opcional, si el ingeniero lo pide).
-10. **Pérdida de insumo:** solo si el ingeniero la pide (hoy 'Esperando definición').
+10. **Pérdida de insumo:** incluido en tablero. **Propuesto (2026-11-07, confirmado por el ingeniero).**
 
-**Reglas:** los reportes 'Pendiente de revisar' se incluyen en los cálculos pero se marcan con un ícono en el dashboard. Los reportes anulados se excluyen. Si un widget no tiene datos, muestra '—'. Los umbrales del semáforo viven en tblParametros.
+**Reglas:** los reportes 'Pendiente de revisar' se incluyen en los cálculos pero se marcan con un ícono en el dashboard. Los reportes anulados se excluyen. Si un widget no tiene datos, muestra '—'. Los umbrales del semáforo viven en tblParametros. **Ingeniero confirma (2026-11-07): reporte por día SÍ (se agrega al alcance, Propuesto); pérdida de insumo en el tablero SÍ (Propuesto). Los catálogos aceptan valores personalizados dinámicamente (AgregarValorNuevo); no hay listas cerradas.**
 
 · **Período:** se elige con un selector de fecha (también se usa para sumar litros).
 
@@ -1055,6 +1055,8 @@ Por cada pregunta: número, pregunta, fecha, responsable, estado.
 · [2026-11-06] · v0.9: Se agrega columna 'id' a tblReducciones para cumplir principio 8.3 (IDs únicos) y habilitar CRUD en F2.2. Se congelan APIs de lectura por período para F3. · Joaquín · estado: Propuesto.
 
 · [2026-11-06] · v0.9: Se define el contenido del tablero en sección 9 (Propuesto). Se agregan umbrales de semáforo en tblParametros (Propuesto). Los reportes 'Pendiente de revisar' se incluyen y marcan visualmente. · Joaquín · estado: Propuesto.
+
+· [2026-11-07] · v0.9: Ingeniero confirma: reporte por día SÍ, pérdida de insumo en tablero SÍ. Se refuerza regla de catálogos dinámicos (valores personalizados). · Joaquín · estado: Propuesto.
 
 ## **14\. Control de versiones del archivo Excel**
 

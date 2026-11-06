@@ -92,6 +92,7 @@ def main():
         excel.Visible = False
         excel.DisplayAlerts = False
         excel.ScreenUpdating = False
+        excel.AutomationSecurity = 1  # msoAutomationSecurityForceEnable
 
         wb = excel.Workbooks.Open(ruta, 0, False)
 
@@ -101,11 +102,29 @@ def main():
             if componente.Type == 1 and componente.Name in nombres:
                 proyecto.VBComponents.Remove(componente)
 
-        for nombre in nombres:
-            proyecto.VBComponents.Import(os.path.join(DIR_BAS, nombre + ".bas"))
-        print("Modulos importados: {}".format(", ".join(nombres)))
+        # Nota (hallazgo del 2026-11-07): quitar modulos y/o importar todos
+        # en un solo lote deja el proyecto VBA en un estado donde excel.Run
+        # falla con " macros deshabilitadas" (sin dialogo visible). El flujo
+        # estable es: quitar -> guardar/cerrar/reabrir -> importar la base
+        # (Calculos, Modulo_Estructura, Utils) -> correr CompletarEstructura
+        # -> importar el resto -> correrla de nuevo -> guardar.
+        for componente in list(proyecto.VBComponents):
+            if componente.Type == 1 and componente.Name in nombres:
+                proyecto.VBComponents.Remove(componente)
+        wb.Save()
+        wb.Close(SaveChanges=False)
+        wb = excel.Workbooks.Open(ruta, 0, False)
 
+        proyecto = wb.VBProject
+        base = [n for n in nombres if n in ("Calculos", "Modulo_Estructura", "Utils")]
+        resto = [n for n in nombres if n not in base]
+        for nombre in base:
+            proyecto.VBComponents.Import(os.path.join(DIR_BAS, nombre + ".bas"))
         excel.Run("Modulo_Estructura.CompletarEstructura", True)
+        for nombre in resto:
+            proyecto.VBComponents.Import(os.path.join(DIR_BAS, nombre + ".bas"))
+        excel.Run("Modulo_Estructura.CompletarEstructura", True)
+        print("Modulos importados: {}".format(", ".join(nombres)))
 
         wb.Save()
         ok = True
