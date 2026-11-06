@@ -188,11 +188,11 @@ Public Function ObtenerTendenciaTurnos(ByVal fechaDesde As Date, ByVal fechaHast
 End Function
 
 ' ==========================================================================
-' 4. Pareto de paradas del periodo (por origen o por motivo)
+' 4. Pareto de paradas del periodo (por clase, origen o motivo)
 ' ==========================================================================
 
 Public Function ObtenerParetoParadas(ByVal fechaDesde As Date, ByVal fechaHasta As Date, _
-        Optional ByVal agruparPor As String = "origen", _
+        Optional ByVal agruparPor As String = "clase", _
         Optional ByVal turno As String = "", Optional ByVal producto As String = "", _
         Optional ByVal linea As String = "") As Collection
 
@@ -200,19 +200,25 @@ Public Function ObtenerParetoParadas(ByVal fechaDesde As Date, ByVal fechaHasta 
     Dim pars As Collection
     Dim grupos As Object
     Dim selSegs As Object
+    Dim clases As Object
     Dim item As Object
     Dim d As Object
     Dim v As Variant
     Dim clave As String
+    Dim origen As String
     Dim minutos As Double
     Dim total As Double
 
     Set col = New Collection
     Set ObtenerParetoParadas = col
 
-    If StrComp(agruparPor, "motivo", vbTextCompare) <> 0 Then agruparPor = "origen"
+    If StrComp(agruparPor, "motivo", vbTextCompare) <> 0 _
+       And StrComp(agruparPor, "origen", vbTextCompare) <> 0 Then
+        agruparPor = "clase"
+    End If
 
     Set grupos = NewDictionary()
+    Set clases = MapaClasesOrigen()
     Set pars = AccesoHojas.ListarParadasPorPeriodo(fechaDesde, fechaHasta)
     Set selSegs = SegsFiltrados(fechaDesde, fechaHasta, turno, producto, linea)
 
@@ -223,8 +229,14 @@ Public Function ObtenerParetoParadas(ByVal fechaDesde As Date, ByVal fechaHasta 
                 If minutos > 0 Then
                     If StrComp(agruparPor, "motivo", vbTextCompare) = 0 Then
                         clave = TextoNoVacio(CStr(item("motivo")))
-                    Else
+                    ElseIf StrComp(agruparPor, "origen", vbTextCompare) = 0 Then
                         clave = TextoNoVacio(CStr(item("origen")))
+                    Else
+                        origen = CStr(item("origen"))
+                        If Len(Trim$(origen)) > 0 And clases.Exists(origen) Then
+                            clave = Trim$(CStr(clases(origen)))
+                        End If
+                        If Len(clave) = 0 Then clave = TextoNoVacio(origen)
                     End If
                     If Not grupos.Exists(clave) Then grupos.Add clave, 0
                     grupos(clave) = CDbl(grupos(clave)) + minutos
@@ -613,6 +625,22 @@ Private Function NewDictionary() As Object
     Set d = CreateObject("Scripting.Dictionary")
     d.CompareMode = 1
     Set NewDictionary = d
+End Function
+
+' Mapa codigo de origen -> clase legible (tblOrigenes.clase), armado una vez
+' por consulta para no golpear la tabla en cada parada.
+Private Function MapaClasesOrigen() As Object
+    Dim d As Object
+    Dim item As Object
+
+    Set d = NewDictionary()
+    Set MapaClasesOrigen = d
+
+    For Each item In AccesoHojas.ListarOrigenes()
+        If Len(Trim$(CStr(item("codigo")))) > 0 Then
+            d(CStr(item("codigo"))) = CStr(item("clase"))
+        End If
+    Next item
 End Function
 
 Private Function ProductoDeClave(ByVal mapa As Object, ByVal clave As String) As String

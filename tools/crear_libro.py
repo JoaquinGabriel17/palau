@@ -172,19 +172,19 @@ TIPOS_ROWS = [
 
 ORIGENES_HEADERS = ["codigo", "nombre", "clase", "activo"]
 ORIGENES_ROWS = [
-    ("OR-01", "sopladora", "máquina de la línea", "Sí"),
-    ("OR-02", "llenadora", "máquina de la línea", "Sí"),
-    ("OR-03", "etiquetadora", "máquina de la línea", "Sí"),
-    ("OR-04", "forradora", "máquina de la línea", "Sí"),
-    ("OR-05", "refrigeración de agua", "servicio de apoyo", "Sí"),
-    ("OR-06", "tratamiento de agua", "servicio de apoyo", "Sí"),
-    ("OR-07", "suministro de agua", "servicio de apoyo", "Sí"),
-    ("OR-08", "descanso/personal", "otro", "Sí"),
-    ("OR-09", "cambio de formato/producto", "otro", "Sí"),
-    ("OR-10", "mantenimiento programado", "otro", "Sí"),
-    ("OR-11", "reunión/capacitación", "otro", "Sí"),
-    ("OR-12", "limpieza/sanitizado programado", "otro", "Sí"),
-    ("OR-13", "otro/no clasificado", "otro", "Sí"),
+    ("OR-01", "sopladora", "Sopladora", "Sí"),
+    ("OR-02", "llenadora", "Llenadora", "Sí"),
+    ("OR-03", "etiquetadora", "Etiquetadora", "Sí"),
+    ("OR-04", "forradora", "Forradora", "Sí"),
+    ("OR-05", "refrigeración de agua", "Refrigeración de agua", "Sí"),
+    ("OR-06", "tratamiento de agua", "Tratamiento de agua", "Sí"),
+    ("OR-07", "suministro de agua", "Suministro de agua", "Sí"),
+    ("OR-08", "descanso/personal", "Descanso/personal", "Sí"),
+    ("OR-09", "cambio de formato/producto", "Cambio de formato/producto", "Sí"),
+    ("OR-10", "mantenimiento programado", "Mantenimiento programado", "Sí"),
+    ("OR-11", "reunión/capacitación", "Reunión/capacitación", "Sí"),
+    ("OR-12", "limpieza/sanitizado programado", "Limpieza/sanitizado programado", "Sí"),
+    ("OR-13", "otro/no clasificado", "Otro/no clasificado", "Sí"),
 ]
 
 MOTIVOS_HEADERS = ["codigo", "motivo", "origen", "tipo_sugerido", "activo"]

@@ -69,7 +69,7 @@ Public Sub ActualizarDashboard()
         filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
 
     Set pareto = DashboardDatos.ObtenerParetoParadas( _
-        filtros.fechaDesde, filtros.fechaHasta, "origen", _
+        filtros.fechaDesde, filtros.fechaHasta, "clase", _
         filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
     Set micro = DashboardDatos.ObtenerMicroparadas( _
         filtros.fechaDesde, filtros.fechaHasta, _
@@ -289,19 +289,11 @@ End Sub
 ' ==========================================================================
 
 Public Sub EscribirPareto(ByVal celdaInicio As Range, pareto As Collection)
-    Dim clases As Object
-    Dim origen As Object
     Dim item As Object
     Dim i As Long
     Dim acum As Double
-    Dim clase As String
 
     On Error GoTo Fallo
-
-    Set clases = NuevoDiccionario()
-    For Each origen In AccesoHojas.ListarOrigenes()
-        clases(CStr(origen("codigo"))) = CStr(origen("clase"))
-    Next origen
 
     celdaInicio.Resize(7, 3).ClearContents
 
@@ -312,12 +304,7 @@ Public Sub EscribirPareto(ByVal celdaInicio As Range, pareto As Collection)
     For i = 1 To pareto.Count
         Set item = pareto(i)
 
-        clase = CStr(item("clave"))
-        If clases.Exists(clase) Then
-            If Len(Trim$(CStr(clases(clase)))) > 0 Then clase = CStr(clases(clase))
-        End If
-
-        celdaInicio.Offset(i - 1, 0).Value = clase
+        celdaInicio.Offset(i - 1, 0).Value = CStr(item("clave"))
         celdaInicio.Offset(i - 1, 1).Value = Utils.NumeroSeguro(item("minutos")) / 60
         celdaInicio.Offset(i - 1, 1).NumberFormat = "0.0"
         acum = acum + Utils.NumeroSeguro(item("porcentaje"))
@@ -584,14 +571,6 @@ Private Function NormalizarLinea(ByVal s As String) As String
     Next i
 
     NormalizarLinea = n
-End Function
-
-Private Function NuevoDiccionario() As Object
-    Dim d As Object
-
-    Set d = CreateObject("Scripting.Dictionary")
-    d.CompareMode = 1
-    Set NuevoDiccionario = d
 End Function
 
 Private Function Guion() As String

@@ -346,11 +346,24 @@ End Function
 
 Private Function Test_F3D3_Pareto498() As Boolean
     Dim col As Collection
+    Dim d As Object
+    Dim claves As String
+    Dim i As Long
+    Dim pasa As Boolean
 
     Set col = ObtenerParetoParadas(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28))
 
+    pasa = (col.Count >= 2)
+    For i = 1 To col.Count
+        Set d = col(i)
+        claves = claves & "|" & CStr(d("clave"))
+        If InStr(CStr(d("clave")), "OR-") = 1 Then pasa = False
+    Next i
+    If InStr(claves, "|Etiquetadora") = 0 Then pasa = False
+    If InStr(claves, "|Sopladora") = 0 Then pasa = False
+
     Test_F3D3_Pareto498 = ValidarLogico("F3 D3 pareto 498", _
-        "al menos 2 origenes con paradas", col.Count >= 2)
+        "al menos 2 clases legibles (sin codigos OR-)", pasa)
 End Function
 
 Private Function Test_F3D3_Reducciones498() As Boolean
@@ -545,7 +558,8 @@ Private Function Test_F3D1_WidgetsDemo() As Boolean
     caso = "F3 D1 widgets demo"
     ok = True
 
-    ' Pareto por origen del 498: las paradas suman 150 min; OR-05 encabeza con 40.
+    ' Pareto por clase del 498: las paradas suman 150 min; Refrigeración de
+    ' agua (OR-05) encabeza con 40.
     Set paretoRes = ObtenerParetoParadas(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28))
     total = 0
     For i = 1 To paretoRes.Count
@@ -555,8 +569,8 @@ Private Function Test_F3D1_WidgetsDemo() As Boolean
     ok = ValidarAbsoluto(caso & " (Pareto): total minutos", total, 150, 0) And ok
     If paretoRes.Count > 0 Then
         Set d = paretoRes(1)
-        If StrComp(CStr(d("clave")), "OR-05", vbTextCompare) <> 0 Then
-            RegistrarFallo caso & " (Pareto): primer origen", "encabezado de pareto"
+        If StrComp(CStr(d("clave")), "Refrigeración de agua", vbTextCompare) <> 0 Then
+            RegistrarFallo caso & " (Pareto): primera clase", "encabezado de pareto"
             ok = False
         Else
             ok = ValidarAbsoluto(caso & " (Pareto): minutos del 1", CDbl(d("minutos")), 40, 0) And ok
