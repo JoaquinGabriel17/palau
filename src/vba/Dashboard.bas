@@ -18,11 +18,18 @@ Public Const COLOR_ROJO As Long = 13551615       ' RGB(255, 199, 206)
 Public Const COLOR_SIN_DATO As Long = 15921906   ' RGB(242, 242, 242)
 
 Public Type TDatosFiltros
+    tipo_periodo As String
     fechaDesde As Date
     fechaHasta As Date
     turno_codigo As String
     producto_codigo As String
     linea_id As String
+End Type
+
+Private Type TDatosFechas
+    fechaDesde As Date
+    fechaHasta As Date
+    turno_codigo As String
 End Type
 
 ' ==========================================================================
@@ -37,7 +44,10 @@ Public Sub ActualizarDashboard()
     Dim pareto As Collection
     Dim micro As Collection
     Dim reducciones As Collection
+    Dim perdida As Collection
+    Dim tendencia As Collection
     Dim litros As Double
+    Dim fechas As TDatosFechas
     Dim protegida As Boolean
     Dim pendientes As Boolean
     Dim lineaFiltro As String
@@ -53,6 +63,10 @@ Public Sub ActualizarDashboard()
     Application.EnableEvents = False
 
     filtros = LeerSelectores()
+    fechas = CalcularFechas(filtros.tipo_periodo, filtros.fechaDesde, filtros.turno_codigo)
+    filtros.fechaDesde = fechas.fechaDesde
+    filtros.fechaHasta = fechas.fechaHasta
+    filtros.turno_codigo = fechas.turno_codigo
 
     ' Hoy existe una sola linea (Linea 1). La tabla de reportes no guarda
     ' linea_id, asi que pasar "1" dejaria TD en cero; con una sola linea el
@@ -80,6 +94,12 @@ Public Sub ActualizarDashboard()
     litros = DashboardDatos.ObtenerLitros( _
         filtros.fechaDesde, filtros.fechaHasta, _
         filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
+    Set perdida = DashboardDatos.ObtenerPerdidaInsumo( _
+        filtros.fechaDesde, filtros.fechaHasta, _
+        filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
+    Set tendencia = DashboardDatos.ObtenerTendenciaTurnos( _
+        filtros.fechaDesde, filtros.fechaHasta, _
+        filtros.turno_codigo, filtros.producto_codigo, lineaFiltro)
 
     If detalle.Encontrado Then
         EscribirTarjeta ws.Range("B7"), detalle.oee, "0.0%"
@@ -98,6 +118,8 @@ Public Sub ActualizarDashboard()
     EscribirMicroparadas ws.Range("A34"), micro
     EscribirReducciones ws.Range("A42"), reducciones
     EscribirLitros ws.Range("B49"), litros
+    EscribirPerdidaInsumo ws.Range("A54"), perdida
+    EscribirTendencia ws.Range("A62"), tendencia
     MarcarExcesos ws, detalle, detalle.Encontrado
 
     pendientes = MarcarPendientes(filtros.fechaDesde, filtros.fechaHasta)
@@ -129,6 +151,8 @@ Fallo:
         ws.Range("A34").Value = Guion()
         ws.Range("A42").Value = Guion()
         ws.Range("B49").Value = Guion()
+        ws.Range("A54").Value = Guion()
+        ws.Range("A62").Value = Guion()
         ws.Range("A2").Value = "Error al actualizar el dashboard: " & sErr
     End If
     Resume Cierre
@@ -144,22 +168,42 @@ Public Function LeerSelectores() As TDatosFiltros
 
     Set ws = ThisWorkbook.Worksheets(HOJA_DASHBOARD)
 
-    f.fechaDesde = FechaCelda(ws.Range("B4"))
-    f.fechaHasta = FechaCelda(ws.Range("D4"))
-    If f.fechaDesde = 0 Then f.fechaDesde = f.fechaHasta
-    If f.fechaHasta = 0 Then f.fechaHasta = f.fechaDesde
-    If f.fechaDesde > 0 And f.fechaHasta > 0 Then
-        If f.fechaDesde > f.fechaHasta Then
-            f.fechaDesde = f.fechaHasta
-            f.fechaHasta = FechaCelda(ws.Range("B4"))
-        End If
-    End If
+    f.tipo_periodo = NormalizarTipoPeriodo(TextoCelda(ws.Range("B4")))
+    f.fechaDesde = FechaCelda(ws.Range("D4"))
+    If f.fechaDesde = 0 Then f.fechaDesde = FechaCelda(ws.Range("B4"))
+    f.fechaHasta = f.fechaDesde
 
     f.turno_codigo = TextoCelda(ws.Range("F4"))
     f.producto_codigo = NormalizarProducto(TextoCelda(ws.Range("H4")))
     f.linea_id = NormalizarLinea(TextoCelda(ws.Range("J4")))
 
     LeerSelectores = f
+End Function
+
+' Calcula el rango de fechas que se le pasa a DashboardDatos segun el tipo
+' de periodo. Turno y Dia usan la fecha elegida; Semana usa lunes a domingo.
+' Solo Turno conserva el filtro por turno_codigo.
+Private Function CalcularFechas(ByVal tipo As String, ByVal fecha As Date, _
+        ByVal turno As String) As TDatosFechas
+
+    Dim r As TDatosFechas
+
+    If fecha = 0 Then Exit Function
+
+    Select Case UCase$(Trim$(tipo))
+    Case "DÍA", "DIA"
+        r.fechaDesde = Int(fecha)
+        r.fechaHasta = Int(fecha)
+    Case "SEMANA"
+        r.fechaDesde = Utils.InicioSemana(fecha)
+        r.fechaHasta = Utils.FinSemana(fecha)
+    Case Else
+        r.fechaDesde = Int(fecha)
+        r.fechaHasta = Int(fecha)
+        r.turno_codigo = turno
+    End Select
+
+    CalcularFechas = r
 End Function
 
 ' ==========================================================================
@@ -412,6 +456,80 @@ Fallo:
 End Sub
 
 ' ==========================================================================
+' 5c. Perdida de insumo y tabla de tendencia
+' ==========================================================================
+
+Public Sub EscribirPerdidaInsumo(ByVal celdaInicio As Range, insumos As Collection)
+    Const FILAS As Long = 5
+
+    Dim item As Object
+    Dim i As Long
+
+    On Error GoTo Fallo
+
+    celdaInicio.Resize(FILAS, 3).ClearContents
+
+    If insumos Is Nothing Then GoTo SinDatos
+    If insumos.Count = 0 Then GoTo SinDatos
+
+    For i = 1 To insumos.Count
+        If i > FILAS Then Exit For
+        Set item = insumos(i)
+        celdaInicio.Offset(i - 1, 0).Value = CStr(item("insumo"))
+        celdaInicio.Offset(i - 1, 1).Value = Utils.NumeroSeguro(item("cantidad"))
+        celdaInicio.Offset(i - 1, 1).NumberFormat = "#,##0"
+        celdaInicio.Offset(i - 1, 2).Value = CStr(item("unidad"))
+    Next i
+    Exit Sub
+
+SinDatos:
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+    Exit Sub
+
+Fallo:
+    On Error Resume Next
+    celdaInicio.Resize(FILAS, 3).ClearContents
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+End Sub
+
+Public Sub EscribirTendencia(ByVal celdaInicio As Range, tendencia As Collection)
+    Const FILAS As Long = 15
+
+    Dim item As Object
+    Dim i As Long
+
+    On Error GoTo Fallo
+
+    celdaInicio.Resize(FILAS, 2).ClearContents
+
+    If tendencia Is Nothing Then GoTo SinDatos
+    If tendencia.Count = 0 Then GoTo SinDatos
+
+    For i = 1 To tendencia.Count
+        If i > FILAS Then Exit For
+        Set item = tendencia(i)
+        celdaInicio.Offset(i - 1, 0).Value = _
+            Format$(CDate(item("fecha")), "dd/mm/yyyy") & " " & CStr(item("turno_codigo"))
+        celdaInicio.Offset(i - 1, 1).Value = Utils.NumeroSeguro(item("oee"))
+        celdaInicio.Offset(i - 1, 1).NumberFormat = "0.0%"
+    Next i
+    Exit Sub
+
+SinDatos:
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+    Exit Sub
+
+Fallo:
+    On Error Resume Next
+    celdaInicio.Resize(FILAS, 2).ClearContents
+    celdaInicio.Value = Guion()
+    celdaInicio.NumberFormat = "@"
+End Sub
+
+' ==========================================================================
 ' 6. Reportes pendientes de revisar en el periodo
 ' ==========================================================================
 
@@ -534,6 +652,20 @@ Private Function SinValor(ByVal v As Variant) As Boolean
         SinValor = True
     ElseIf Len(Trim$(CStr(v))) = 0 Then
         SinValor = True
+    End If
+End Function
+
+Private Function NormalizarTipoPeriodo(ByVal s As String) As String
+    Dim t As String
+
+    t = UCase$(Trim$(s))
+
+    If t = "DÍA" Or t = "DIA" Then
+        NormalizarTipoPeriodo = "Día"
+    ElseIf t = "SEMANA" Then
+        NormalizarTipoPeriodo = "Semana"
+    Else
+        NormalizarTipoPeriodo = "Turno"
     End If
 End Function
 

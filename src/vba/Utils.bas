@@ -47,3 +47,21 @@ Public Function EsAnulado(ByVal valor As Variant) As Boolean
     EsAnulado = (StrComp(s, "S" & ChrW(237), vbTextCompare) = 0) _
                 Or (StrComp(s, "Si", vbTextCompare) = 0)
 End Function
+
+' Lunes de la semana de la fecha (semana de lunes a domingo).
+Public Function InicioSemana(ByVal fecha As Date) As Date
+    Dim d As Date
+
+    If fecha = 0 Then Exit Function
+    d = Int(fecha)
+    InicioSemana = d - (Weekday(d, vbMonday) - 1)
+End Function
+
+' Domingo de la semana de la fecha (semana de lunes a domingo).
+Public Function FinSemana(ByVal fecha As Date) As Date
+    Dim d As Date
+
+    If fecha = 0 Then Exit Function
+    d = Int(fecha)
+    FinSemana = d - (Weekday(d, vbMonday) - 1) + 6
+End Function

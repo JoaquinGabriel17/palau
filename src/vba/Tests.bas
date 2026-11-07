@@ -18,6 +18,9 @@ End Type
 Private mResultados() As TResultado
 Private mCantidad As Long
 
+Private Const PREFIJO_F3D4 As String = "TST-F3D4"
+Private mLoteF3D4 As String
+
 Public Sub EjecutarPruebas()
     Dim ok As Boolean
 
@@ -115,6 +118,7 @@ Public Function RunAllTests() As Boolean
     ok = EjecutarFaseF3D1() And ok
     ok = EjecutarFaseF3D2() And ok
     ok = EjecutarFaseF3D3() And ok
+    ok = EjecutarFaseF3D4() And ok
 
     Debug.Print "Resultados registrados: " & mCantidad
     RunAllTests = ok
@@ -249,7 +253,7 @@ Private Function Test_F3D2_Dashboard498(ByVal ws As Worksheet, ByVal tolerancia 
     Dim oee As Double
 
     Application.EnableEvents = False
-    ws.Range("B4").Value = DateSerial(2026, 9, 28)
+    ws.Range("B4").Value = "Turno"
     ws.Range("D4").Value = DateSerial(2026, 9, 28)
     ws.Range("F4").Value = "RES-T"
     ws.Range("H4").Value = "1500"
@@ -267,7 +271,7 @@ Private Function Test_F3D2_SinDatos(ByVal ws As Worksheet) As Boolean
     guion = ChrW(8212)
 
     Application.EnableEvents = False
-    ws.Range("B4").Value = DateSerial(2026, 1, 1)
+    ws.Range("B4").Value = "Turno"
     ws.Range("D4").Value = DateSerial(2026, 1, 1)
     Dashboard.ActualizarDashboard
 
@@ -303,7 +307,7 @@ End Function
 Private Sub RestaurarSelectoresD2(ByVal ws As Worksheet)
     If ws Is Nothing Then Exit Sub
     Application.EnableEvents = False
-    ws.Range("B4").Value = DateSerial(2026, 9, 28)
+    ws.Range("B4").Value = "Turno"
     ws.Range("D4").Value = DateSerial(2026, 9, 28)
     ws.Range("F4").Value = "RES-T"
     ws.Range("H4").Value = "1500"
@@ -402,6 +406,301 @@ Private Function Test_F3D3_MicroSinDatos() As Boolean
     Test_F3D3_MicroSinDatos = ValidarLogico("F3 D3 microparadas 498", _
         "periodo sin microparadas devuelve coleccion vacia", col.Count = 0)
 End Function
+
+' ==========================================================================
+' F3 D4 - Periodo (Turno/Dia/Semana), perdida de insumo y tendencia.
+' ==========================================================================
+
+Private Function EjecutarFaseF3D4() As Boolean
+    Dim ok As Boolean
+    Dim tolerancia As Double
+
+    Debug.Print "=== F3 D4: periodo, perdida de insumo y tendencia ==="
+
+    ok = True
+    On Error GoTo Fallo
+
+    tolerancia = ToleranciaComparacionPP()
+
+    LimpiarF3D4
+    PrepararDatosF3D4
+
+    ok = Test_F3D4_Semana() And ok
+    ok = Test_F3D4_RN01(tolerancia) And ok
+    ok = Test_F3D4_PerdidaInsumo() And ok
+    ok = Test_F3D4_Tendencia() And ok
+
+Cierre:
+    On Error GoTo 0
+    LimpiarF3D4
+    EjecutarFaseF3D4 = ok
+    Exit Function
+
+Fallo:
+    Debug.Print "ERROR en EjecutarFaseF3D4: " & Err.Description
+    On Error Resume Next
+    LimpiarF3D4
+    EjecutarFaseF3D4 = False
+End Function
+
+Private Function Test_F3D4_Semana() As Boolean
+    Dim f As Date
+    Dim ini As Date
+    Dim fin As Date
+    Dim pasa As Boolean
+
+    ' Miercoles 04/11/2026: lunes 02/11 y domingo 08/11.
+    f = DateSerial(2026, 11, 4)
+    ini = Utils.InicioSemana(f)
+    fin = Utils.FinSemana(f)
+
+    pasa = (ini = DateSerial(2026, 11, 2)) And (fin = DateSerial(2026, 11, 8))
+
+    Debug.Print "F3 D4 semana: inicio=" & Format$(ini, "dd/mm/yyyy") & _
+        " fin=" & Format$(fin, "dd/mm/yyyy")
+
+    Test_F3D4_Semana = ValidarLogico("F3 D4 semana", _
+        "miercoles -> lunes 02/11 y domingo 08/11", pasa)
+End Function
+
+Private Function Test_F3D4_RN01(ByVal tolerancia As Double) As Boolean
+    Dim d As TDetallePeriodo
+    Dim esperado As Double
+    Dim promedio As Double
+    Dim pasa As Boolean
+
+    ' Turno A: 480 min, 23040 u a 60/min -> OEE 80%.
+    ' Turno B: 240 min, 5760 u a 60/min -> OEE 40%.
+    ' Periodo: TO 720, ideal 480 -> OEE 66,67%; el promedio simple seria 60%.
+    d = ObtenerDetallePeriodo(DateSerial(2027, 3, 1), DateSerial(2027, 3, 2))
+    esperado = 480 / 720
+    promedio = 0.6
+
+    pasa = d.Encontrado _
+        And (Abs(d.td - 720) < 0.001) _
+        And (Abs(d.to - 720) < 0.001) _
+        And (Abs(d.tiempo_ideal - 480) < 0.5) _
+        And (Abs(d.unidades_totales - 28800) < 0.001) _
+        And (Abs(d.oee - esperado) * 100 <= tolerancia) _
+        And (Abs(d.oee - promedio) > 0.01)
+
+    Debug.Print "F3 D4 RN-01: TD=" & Format$(d.td, "0.0") & _
+        " TO=" & Format$(d.to, "0.0") & _
+        " ideal=" & Format$(d.tiempo_ideal, "0.0") & _
+        " unidades=" & Format$(d.unidades_totales, "0.0") & _
+        " OEE=" & Format$(d.oee, "0.0000") & _
+        " (promedio simple=" & Format$(promedio, "0.0000") & ")"
+
+    ' Un solo registro: RN-01 exige suma de tiempos/unidades, no promedio.
+    Registrar "F3 D4 RN-01 periodo 2 dias", _
+        "OEE consolidado (no promedio de turnos)", esperado, d.oee, _
+        (d.oee - esperado) * 100, True, pasa
+    Test_F3D4_RN01 = pasa
+End Function
+
+Private Function Test_F3D4_PerdidaInsumo() As Boolean
+    Dim col As Collection
+    Dim item As Object
+    Dim i As Long
+    Dim envases As Double
+    Dim tapas As Double
+
+    Set col = ObtenerPerdidaInsumo(DateSerial(2026, 9, 28), DateSerial(2026, 9, 28), "RES-T")
+
+    For i = 1 To col.Count
+        Set item = col(i)
+        If StrComp(CStr(item("insumo")), "envases", vbTextCompare) = 0 Then
+            envases = Utils.NumeroSeguro(item("cantidad"))
+        ElseIf StrComp(CStr(item("insumo")), "tapas", vbTextCompare) = 0 Then
+            tapas = Utils.NumeroSeguro(item("cantidad"))
+        End If
+    Next i
+
+    Debug.Print "F3 D4 perdida insumo 498: elementos=" & col.Count & _
+        " envases=" & Format$(envases, "0") & " tapas=" & Format$(tapas, "0")
+
+    Test_F3D4_PerdidaInsumo = ValidarLogico("F3 D4 perdida de insumo 498", _
+        "envases 120 y tapas 80", (envases = 120) And (tapas = 80))
+End Function
+
+Private Function Test_F3D4_Tendencia() As Boolean
+    Dim col As Collection
+    Dim f As Date
+
+    f = DateSerial(2027, 3, 1)
+    Set col = ObtenerTendenciaTurnos(Utils.InicioSemana(f), Utils.FinSemana(f))
+
+    Debug.Print "F3 D4 tendencia semanal: elementos=" & col.Count
+
+    Test_F3D4_Tendencia = ValidarLogico("F3 D4 tendencia semanal", _
+        "semana con 3 turnos devuelve 3 puntos", col.Count = 3)
+End Function
+
+Private Sub PrepararDatosF3D4()
+    Dim d1 As Date
+    Dim d2 As Date
+    Dim d3 As Date
+    Dim msg As String
+    Dim idTL As String
+
+    d1 = DateSerial(2027, 3, 1)
+    d2 = DateSerial(2027, 3, 2)
+    d3 = DateSerial(2027, 3, 3)
+
+    mLoteF3D4 = AccesoHojas.BuscarOCrearLote("03998", "500SG", d1)
+    If Len(mLoteF3D4) = 0 Then Exit Sub
+
+    ' Turno A (80%): 480 min y 23040 unidades a 60 u/min.
+    msg = ""
+    If AccesoHojas.CrearReporte(d1, "RES-M", mLoteF3D4, _
+            d1 + TimeSerial(6, 0, 0), d1 + TimeSerial(14, 0, 0), idTL, _
+            nroReporte:=PREFIJO_F3D4 & "-A", equipo:="RES", _
+            encargado:="prueba F3D4", mensaje:=msg) Then
+        AccesoHojas.CrearProduccion idTL, 23040, 0, 60, msg
+    End If
+
+    ' Turno B (40%): 240 min y 5760 unidades a 60 u/min.
+    msg = ""
+    If AccesoHojas.CrearReporte(d2, "RES-M", mLoteF3D4, _
+            d2 + TimeSerial(6, 0, 0), d2 + TimeSerial(10, 0, 0), idTL, _
+            nroReporte:=PREFIJO_F3D4 & "-B", equipo:="RES", _
+            encargado:="prueba F3D4", mensaje:=msg) Then
+        AccesoHojas.CrearProduccion idTL, 5760, 0, 60, msg
+    End If
+
+    ' Tercer turno de la semana (punto adicional para la tendencia).
+    msg = ""
+    If AccesoHojas.CrearReporte(d3, "RES-M", mLoteF3D4, _
+            d3 + TimeSerial(6, 0, 0), d3 + TimeSerial(10, 0, 0), idTL, _
+            nroReporte:=PREFIJO_F3D4 & "-C", equipo:="RES", _
+            encargado:="prueba F3D4", mensaje:=msg) Then
+        AccesoHojas.CrearProduccion idTL, 5760, 0, 60, msg
+    End If
+
+    InsertarPerdidaInsumoF3D4 DateSerial(2026, 9, 28), "RES-T", "envases", 120, "unidades"
+    InsertarPerdidaInsumoF3D4 DateSerial(2026, 9, 28), "RES-T", "tapas", 80, "unidades"
+End Sub
+
+Private Sub InsertarPerdidaInsumoF3D4(ByVal fecha As Date, ByVal turno As String, _
+        ByVal insumo As String, ByVal cantidad As Double, ByVal unidad As String)
+
+    Dim lo As ListObject
+    Dim fila As ListRow
+
+    Set lo = Utils.Tabla("tblPerdidasInsumo")
+    If lo Is Nothing Then Exit Sub
+
+    Set fila = lo.ListRows.Add
+    SetValorTest fila.Range, lo, "fecha", fecha
+    SetValorTest fila.Range, lo, "turno", turno
+    SetValorTest fila.Range, lo, "insumo", insumo
+    SetValorTest fila.Range, lo, "cantidad", cantidad
+    SetValorTest fila.Range, lo, "unidad", unidad
+    SetValorTest fila.Range, lo, "motivo", "prueba F3D4"
+    SetValorTest fila.Range, lo, "detalle", PREFIJO_F3D4
+End Sub
+
+Private Sub LimpiarF3D4()
+    Dim ids As Object
+    Dim v As Variant
+
+    Set ids = CreateObject("Scripting.Dictionary")
+    ids.CompareMode = 1
+    ReunirIdsF3D4 ids
+
+    On Error Resume Next
+
+    For Each v In ids.Keys
+        BorrarFilasPorValorTest "tblParadas", "id_turno_lote", CStr(v)
+        BorrarFilasPorValorTest "tblProduccion", "id_turno_lote", CStr(v)
+        BorrarFilasPorValorTest "tblRechazos", "id_turno_lote", CStr(v)
+        BorrarFilasPorValorTest "tblTramosSinEnvase", "id_turno_lote", CStr(v)
+        BorrarFilasPorValorTest "tblReducciones", "id_turno_lote", CStr(v)
+    Next v
+
+    BorrarReportesF3D4
+    BorrarPerdidasF3D4
+    If Len(mLoteF3D4) > 0 Then
+        BorrarFilasPorValorTest "tblLotes", "id_lote", mLoteF3D4
+    End If
+    mLoteF3D4 = ""
+
+    On Error GoTo 0
+End Sub
+
+Private Sub ReunirIdsF3D4(ByVal ids As Object)
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cNro As Long
+    Dim cId As Long
+    Dim i As Long
+    Dim s As String
+
+    Set lo = Utils.Tabla("tblTurnosRegistro")
+    If lo Is Nothing Then Exit Sub
+
+    cNro = Utils.IndiceColumna(lo, "nro_reporte")
+    cId = Utils.IndiceColumna(lo, "id_turno_lote")
+    If cNro = 0 Or cId = 0 Then Exit Sub
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Sub
+
+    For i = 1 To rng.Rows.Count
+        s = CStr(rng.Cells(i, cNro).Value)
+        If InStr(1, s, PREFIJO_F3D4, vbTextCompare) = 1 Then
+            ids(CStr(rng.Cells(i, cId).Value)) = True
+        End If
+    Next i
+End Sub
+
+Private Sub BorrarReportesF3D4()
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cNro As Long
+    Dim i As Long
+    Dim s As String
+
+    Set lo = Utils.Tabla("tblTurnosRegistro")
+    If lo Is Nothing Then Exit Sub
+
+    cNro = Utils.IndiceColumna(lo, "nro_reporte")
+    If cNro = 0 Then Exit Sub
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Sub
+
+    For i = rng.Rows.Count To 1 Step -1
+        s = CStr(rng.Cells(i, cNro).Value)
+        If InStr(1, s, PREFIJO_F3D4, vbTextCompare) = 1 Then
+            lo.ListRows(i).Delete
+        End If
+    Next i
+End Sub
+
+Private Sub BorrarPerdidasF3D4()
+    Dim lo As ListObject
+    Dim rng As Range
+    Dim cDetalle As Long
+    Dim i As Long
+    Dim s As String
+
+    Set lo = Utils.Tabla("tblPerdidasInsumo")
+    If lo Is Nothing Then Exit Sub
+
+    cDetalle = Utils.IndiceColumna(lo, "detalle")
+    If cDetalle = 0 Then Exit Sub
+
+    Set rng = lo.DataBodyRange
+    If rng Is Nothing Then Exit Sub
+
+    For i = rng.Rows.Count To 1 Step -1
+        s = CStr(rng.Cells(i, cDetalle).Value)
+        If InStr(1, s, PREFIJO_F3D4, vbTextCompare) = 1 Then
+            lo.ListRows(i).Delete
+        End If
+    Next i
+End Sub
 
 Private Function Test_F3D1_Cascada498() As Boolean
     Dim caso As String

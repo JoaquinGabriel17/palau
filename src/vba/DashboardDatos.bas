@@ -175,6 +175,7 @@ Public Function ObtenerTendenciaTurnos(ByVal fechaDesde As Date, ByVal fechaHast
         If det.td > 0 Then
             Set item = NewDictionary()
             item("fecha") = CDate(d("fecha"))
+            item("fechaOrd") = CDbl(CDate(d("fecha")))
             item("turno_codigo") = CStr(d("turno"))
             item("oee") = det.oee
             item("disponibilidad") = det.disponibilidad
@@ -184,7 +185,7 @@ Public Function ObtenerTendenciaTurnos(ByVal fechaDesde As Date, ByVal fechaHast
         End If
     Next v
 
-    OrdenarColeccion col, "fecha", False
+    OrdenarColeccion col, "fechaOrd", False
 End Function
 
 ' ==========================================================================
@@ -784,7 +785,7 @@ Private Function AnuladosPorFechaTurno(ByVal fechaDesde As Date, ByVal fechaHast
     Dim i As Long
     Dim f As Date
     Dim sTurno As String
-    Dim enPeriodo As Boolean
+    Dim enRango As Boolean
     Dim esAnulado As Boolean
 
     Set d = NewDictionary()
@@ -807,13 +808,13 @@ Private Function AnuladosPorFechaTurno(ByVal fechaDesde As Date, ByVal fechaHast
                     Or (cEstado > 0 And StrComp(Trim$(CStr(rng.Cells(i, cEstado).Value)), ESTADO_ANULADO, vbTextCompare) = 0)
         If esAnulado Then
             If fechaDesde = 0 And fechaHasta = 0 Then
-                enPeriodo = True
+                enRango = True
             Else
                 f = 0
                 If cFecha > 0 Then f = Utils.AFecha(rng.Cells(i, cFecha).Value)
-                enPeriodo = EnPeriodo(f, fechaDesde, fechaHasta)
+                enRango = EnPeriodo(f, fechaDesde, fechaHasta)
             End If
-            If enPeriodo And cFecha > 0 Then
+            If enRango And cFecha > 0 Then
                 f = Utils.AFecha(rng.Cells(i, cFecha).Value)
                 sTurno = ""
                 If cTurno > 0 Then sTurno = TextoNoVacio(CStr(rng.Cells(i, cTurno).Value))
